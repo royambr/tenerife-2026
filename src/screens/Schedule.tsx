@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useStore, useEditMode, editStore, store } from '../store';
-import { activitiesFor, fmtDateLong, INTENSITY_COLORS } from '../utils';
+import { activitiesFor, fmtDateLong, INTENSITY_COLORS, sortActivities } from '../utils';
+import { detectConflicts } from '../livemode';
 import { ActivityCard } from '../components/ActivityCard';
 import { ActivitySheet } from '../components/ActivitySheet';
 import type { Activity, DayPart } from '../data/types';
@@ -25,6 +26,7 @@ export function Schedule() {
   const [altFor, setAltFor] = useState<Activity | null>(null);
 
   const dates = plan.days.map(d => d.date);
+  const allSorted = useMemo(() => sortActivities(activities.filter(a => a.planId === plan.id)), [activities, plan.id]);
 
   return (
     <div className="p-4 pb-2 space-y-5 animate-fade-up">
@@ -44,6 +46,7 @@ export function Schedule() {
       {dates.map(date => {
         const day = plan.days.find(d => d.date === date)!;
         const acts = activitiesFor(plan.id, activities, date);
+        const dayConflicts = detectConflicts(acts, allSorted);
         return (
           <section key={date} className="space-y-2 lg:bg-white lg:rounded-3xl lg:p-4 lg:border lg:border-ocean-100/60 lg:shadow-soft">
             <div className="flex items-center justify-between sticky top-0 lg:static bg-gradient-to-b from-[#f6fbfd] to-[#f6fbfd]/80 lg:bg-none backdrop-blur lg:backdrop-blur-0 z-10 -mx-4 lg:mx-0 px-4 lg:px-0 py-2 lg:py-0 lg:mb-2">
@@ -55,6 +58,17 @@ export function Schedule() {
                 {day.intensity}
               </span>
             </div>
+
+            {dayConflicts.slice(0, 2).map(c => (
+              <div key={c.id} className={`rounded-xl p-2 text-[11px] font-bold mb-1 border ${
+                c.level === 'critical' ? 'bg-red-50 border-red-200 text-red-700' :
+                c.level === 'warning' ? 'bg-sunset-300/15 border-sunset-300 text-sunset-700' :
+                'bg-ocean-50 border-ocean-100 text-ocean-700'
+              }`}>
+                <div>{c.level === 'critical' ? '🚨' : c.level === 'warning' ? '⚠️' : 'ℹ️'} {c.text}</div>
+                {c.hint && <div className="text-[10px] opacity-80 font-semibold mt-0.5">{c.hint}</div>}
+              </div>
+            ))}
 
             {SECTIONS.map(sec => {
               const items = acts.filter(a => a.dayPart === sec.part);

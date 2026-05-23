@@ -148,13 +148,28 @@ export function detectConflicts(dayActivities: Activity[], allActivitiesSorted: 
       const nextDayActs = tomorrow.filter(a => a.dayDate === nextDate);
       const earlyFlight = nextDayActs.find(a => a.category === 'טיסה' && minutesFromHM(a.startTime) < 12*60);
       if (earlyFlight) {
-        const lateAct = acts.find(a => minutesFromHM(a.startTime) >= 22*60 || a.dayPart === 'lateNight');
+        // any night/lateNight activity that ends past ~01:30 (handle wrap: end<start ⇒ +24h)
+        const lateAct = acts.find(a => {
+          if (a.dayPart !== 'night' && a.dayPart !== 'lateNight' && minutesFromHM(a.startTime) < 22*60) return false;
+          let endM = minutesFromHM(a.endTime);
+          const startM = minutesFromHM(a.startTime);
+          if (endM < startM) endM += 24*60; // wraps to next day
+          return endM > 25*60 + 30; // past 01:30
+        });
         if (lateAct) {
           conflicts.push({
             id: 'flight_'+earlyFlight.id, level: 'critical',
             text: 'מחר טיסה בבוקר, לא כדאי למשוך לילה מאוחר מדי',
-            hint: `${earlyFlight.name} ב-${earlyFlight.startTime}`,
+            hint: `${lateAct.name} עד ${lateAct.endTime} · טיסה ב-${earlyFlight.startTime}`,
             relatedIds: [lateAct.id, earlyFlight.id]
+          });
+        } else {
+          // softer info banner regardless, so day-23 always reminds about flight
+          conflicts.push({
+            id: 'flight_soft_'+earlyFlight.id, level: 'warning',
+            text: 'מחר טיסה בבוקר — שעת חזרה מבוקרת',
+            hint: `${earlyFlight.name} ב-${earlyFlight.startTime}`,
+            relatedIds: [earlyFlight.id]
           });
         }
       }
@@ -180,6 +195,31 @@ export function summarizeDay(dayActivities: Activity[], allActivitiesSorted: Act
   const toCloseCount = dayActivities.filter(a => a.bookingRequired && a.status !== 'הוזמן').length;
   const activitiesCount = dayActivities.filter(a => a.category !== 'מלון' && a.category !== 'נסיעה / לוגיסטיקה').length;
 
+  // Departure-day detection (today has a flight before 12:00 → calm "departure mode")
+  const myFlight = dayActivities.find(a => a.category === 'טיסה' && minutesFromHM(a.startTime) < 12*60);
+  if (myFlight) {
+    return {
+      intensityWord: 'יום יציאה',
+      activitiesCount,
+      travelCount,
+      toCloseCount,
+      conflictCount: conflicts.length,
+      sentence: `יום היציאה — טיסה ב-${myFlight.startTime}. רק check-out, נסיעה לשדה, ולהיפרד מהאי בכיף.`
+    };
+  }
+
+  // Tomorrow-flight detection
+  const todayDate = dayActivities[0]?.dayDate;
+  const flightTomorrow = todayDate
+    ? allActivitiesSorted.find(a => a.dayDate > todayDate && a.category === 'טיסה' && minutesFromHM(a.startTime) < 12*60)
+    : undefined;
+  // only flag "tomorrow" specifically (not later)
+  const isTomorrow = flightTomorrow && (() => {
+    const d = new Date(todayDate + 'T00:00:00');
+    d.setDate(d.getDate() + 1);
+    return flightTomorrow.dayDate === `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  })();
+
   let word = 'די עמוס';
   if (activitiesCount <= 2) word = 'רגוע';
   else if (activitiesCount <= 4) word = 'נעים';
@@ -192,7 +232,10 @@ export function summarizeDay(dayActivities: Activity[], allActivitiesSorted: Act
   else if (travelCount) parts.push(`${travelCount} העברות`);
   if (toCloseCount > 0) parts.push(`${toCloseCount} דברים לסגור`);
 
-  const sentence = parts.join(', ') + '.';
+  let sentence = parts.join(', ') + '.';
+  if (isTomorrow) {
+    sentence += ` מחר טיסה בבוקר (${flightTomorrow!.startTime}) — שעת חזרה מבוקרת.`;
+  }
 
   return {
     intensityWord: word,
@@ -204,20 +247,38 @@ export function summarizeDay(dayActivities: Activity[], allActivitiesSorted: Act
   };
 }
 
-// cascade recalc - simple implementation: when slip happens, shift later items by `slipMin` and mark 'בסיכון' if end pushed past midnight
-export function cascadeRecalc(dayActs: Activity[], anchorId: string, slipMin: number): Activity[] {
+// cascade recalc — shifts later items by slipMin; marks 'בסיכון' if pushed past midnight,
+// or — if a flight exists tomorrow morning — past ~05:00 of next day (treating flight as hard anchor).
+export function cascadeRecalc(dayActs: Activity[], anchorId: string, slipMin: number, allActivitiesSorted?: Activity[]): Activity[] {
   if (slipMin === 0) return dayActs;
   const sorted = [...dayActs].sort((a,b) => minutesFromHM(a.startTime) - minutesFromHM(b.startTime));
   const idx = sorted.findIndex(a => a.id === anchorId);
   if (idx < 0) return dayActs;
+
+  // Find tomorrow's early flight if any
+  const todayDate = sorted[0]?.dayDate;
+  let hardLimitMin = 24*60; // default: past midnight ⇒ at risk
+  if (allActivitiesSorted && todayDate) {
+    const flightTomorrow = allActivitiesSorted.find(a =>
+      a.dayDate > todayDate && a.category === 'טיסה' && minutesFromHM(a.startTime) < 12*60);
+    if (flightTomorrow) hardLimitMin = 24*60 + 5*60; // 05:00 next day
+  }
+
   const result: Activity[] = [];
   for (let i = 0; i < sorted.length; i++) {
     const a = sorted[i];
     if (i <= idx) { result.push(a); continue; }
-    const s = minutesFromHM(a.startTime) + slipMin;
-    const e = minutesFromHM(a.endTime) + slipMin;
-    const status: Activity['status'] = e > 24*60 ? 'בסיכון' : a.status;
-    result.push({ ...a, startTime: minToHM(Math.min(s, 23*60+59)), endTime: minToHM(Math.min(e, 23*60+59)), status });
+    const sm = minutesFromHM(a.startTime) + slipMin;
+    let em = minutesFromHM(a.endTime) + slipMin;
+    if (em < sm) em += 24*60;
+    const atRisk = em > hardLimitMin;
+    const status: Activity['status'] = atRisk ? 'בסיכון' : a.status;
+    result.push({
+      ...a,
+      startTime: minToHM(Math.min(sm, 23*60+59)),
+      endTime: minToHM(Math.min(em > 24*60 ? em - 24*60 : em, 23*60+59)),
+      status
+    });
   }
   return result;
 }
