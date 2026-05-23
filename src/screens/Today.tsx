@@ -8,11 +8,17 @@ import { Chip } from '../components/Chip';
 import { detectConflicts, summarizeDay } from '../livemode';
 import type { Activity } from '../data/types';
 import { AlternativesSheet } from '../components/AlternativesSheet';
+import { PROFILES } from '../data/profiles';
 
 export function Today() {
   const trip = useStore(s => s.trip);
   const plan = useStore(s => s.plans.find(p => p.id === s.trip.activePlanId)!);
   const activities = useStore(s => s.activities);
+  const participants = useStore(s => s.participants);
+  const currentId = useStore(s => s.currentParticipantId);
+  const me = participants.find(p => p.id === currentId);
+  const meProfile = PROFILES[currentId];
+  const [showMe, setShowMe] = useState(false);
 
   const allDates = useMemo(() => plan.days.map(d => d.date), [plan]);
   const realToday = iso(new Date());
@@ -54,16 +60,33 @@ export function Today() {
         </span>
       </header>
 
-      {/* Day summary banner */}
-      <div className="rounded-2xl bg-white shadow-soft border border-ocean-100/60 p-3">
-        <p className="text-[14px] text-ocean-700 font-semibold leading-6">{summary.sentence}</p>
+      {/* Day summary — single line + expandable chips */}
+      <details className="rounded-2xl bg-white border border-ocean-100/60 p-3 group">
+        <summary className="text-[13px] text-ocean-700 font-semibold leading-5 cursor-pointer list-none flex items-start gap-2">
+          <span className="flex-1">{shortSummary(summary)}</span>
+          <span className="text-zinc-400 text-xs group-open:rotate-180 transition">▾</span>
+        </summary>
         <div className="flex flex-wrap gap-1.5 mt-2">
-          {summary.activitiesCount > 0 && <Chip tone="ocean">🎯 {summary.activitiesCount} פעילויות</Chip>}
-          {summary.toCloseCount > 0 && <Chip tone="sunset">📌 {summary.toCloseCount} לסגור</Chip>}
-          {summary.conflictCount > 0 && <Chip tone="red">⚠️ {summary.conflictCount} שים לב</Chip>}
+          {summary.activitiesCount > 0 && <Chip tone="ocean">🎯 {summary.activitiesCount}</Chip>}
+          {summary.toCloseCount > 0 && <Chip tone="sunset">📌 {summary.toCloseCount}</Chip>}
+          {summary.conflictCount > 0 && <Chip tone="red">⚠️ {summary.conflictCount}</Chip>}
           <Chip tone="sand">🛌 {day.sleepingAt}</Chip>
         </div>
-      </div>
+      </details>
+
+      {/* Participant chip — collapsible blurb */}
+      {me && meProfile && (
+        <div>
+          <button onClick={() => setShowMe(v => !v)}
+                  aria-label={`פרופיל של ${me.name}`}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-white border border-ocean-100 px-2.5 py-1 text-[12px] font-semibold text-ocean-700">
+            <span>{me.emoji}</span>{me.name}<span className="text-[10px] text-zinc-400">{showMe ? '▴' : '▾'}</span>
+          </button>
+          {showMe && (
+            <p className="mt-1.5 text-[12px] text-zinc-600 leading-5 px-1">{meProfile.blurb}</p>
+          )}
+        </div>
+      )}
 
       <TripProgress dates={allDates} activeDate={activeDate} onPick={setActiveDate} />
 
@@ -82,29 +105,34 @@ export function Today() {
                 <div className="text-[12px] opacity-90 mt-0.5">{next.region} · {costLabel(next.costLevel)}</div>
               </div>
             </div>
-            <div className="mt-4 grid grid-cols-5 gap-2">
+            <div className="mt-4 grid grid-cols-5 gap-1.5">
               <a href={next.mapsUrl || buildMapsUrl(next.name)} target="_blank" rel="noreferrer"
-                 className="rounded-xl bg-white text-ocean-700 text-[11px] font-extrabold py-2.5 text-center min-h-[44px] flex flex-col items-center justify-center">
+                 aria-label="ניווט"
+                 className="rounded-xl bg-white text-ocean-700 text-[10px] font-bold py-2 text-center min-h-[44px] flex flex-col items-center justify-center gap-0.5">
                 <span className="text-lg leading-none">🧭</span>
                 <span>ניווט</span>
               </a>
               <button onClick={() => store.setStatus(next.id, 'בוצע')}
-                      className="rounded-xl bg-emerald-500 text-white text-[11px] font-extrabold py-2.5 min-h-[44px] flex flex-col items-center justify-center">
+                      aria-label="סמן כבוצע"
+                      className="rounded-xl bg-emerald-500 text-white text-[10px] font-bold py-2 min-h-[44px] flex flex-col items-center justify-center gap-0.5">
                 <span className="text-lg leading-none">✓</span>
                 <span>בוצע</span>
               </button>
               <button onClick={() => store.setStatus(next.id, 'דולג')}
-                      className="rounded-xl bg-white/15 backdrop-blur text-white text-[11px] font-extrabold py-2.5 min-h-[44px] flex flex-col items-center justify-center">
+                      aria-label="דלג"
+                      className="rounded-xl bg-white/15 backdrop-blur text-white text-[10px] font-bold py-2 min-h-[44px] flex flex-col items-center justify-center gap-0.5">
                 <span className="text-lg leading-none">⏩</span>
                 <span>דלג</span>
               </button>
               <button onClick={() => setAltFor(next)}
-                      className="rounded-xl bg-white/15 backdrop-blur text-white text-[11px] font-extrabold py-2.5 min-h-[44px] flex flex-col items-center justify-center">
+                      aria-label="החלף"
+                      className="rounded-xl bg-white/15 backdrop-blur text-white text-[10px] font-bold py-2 min-h-[44px] flex flex-col items-center justify-center gap-0.5">
                 <span className="text-lg leading-none">🔄</span>
                 <span>החלף</span>
               </button>
               <button onClick={() => setSel(next)}
-                      className="rounded-xl bg-sunset-500 text-white text-[11px] font-extrabold py-2.5 min-h-[44px] flex flex-col items-center justify-center">
+                      aria-label="פרטים"
+                      className="rounded-xl bg-sunset-500 text-white text-[10px] font-bold py-2 min-h-[44px] flex flex-col items-center justify-center gap-0.5">
                 <span className="text-lg leading-none">📖</span>
                 <span>פרטים</span>
               </button>
@@ -132,11 +160,11 @@ export function Today() {
         </div>
       )}
 
-      {/* To book - chips only */}
+      {/* To book - chips only, collapsed by default */}
       {toBook.length > 0 && (
-        <details className="rounded-2xl bg-white border border-sunset-300 shadow-soft p-3" open>
+        <details className="rounded-2xl bg-white border border-sunset-300 p-3">
           <summary className="flex items-center justify-between cursor-pointer">
-            <div className="text-[13px] font-extrabold text-sunset-700">📌 צריך לסגור</div>
+            <div className="text-[13px] font-bold text-sunset-700">📌 לסגור</div>
             <Chip tone="sunset">{toBook.length}</Chip>
           </summary>
           <div className="mt-2 flex flex-wrap gap-1.5">
@@ -218,6 +246,13 @@ function ConflictBanner({ conflict, onReplace, onOpen }:{
       </div>
     </div>
   );
+}
+
+function shortSummary(s: ReturnType<typeof summarizeDay>) {
+  if (s.intensityWord === 'יום יציאה') return 'יום יציאה — טיסה בבוקר.';
+  const bits: string[] = [`${s.activitiesCount} פעילויות`];
+  if (s.toCloseCount > 0) bits.push(`${s.toCloseCount} לסגור`);
+  return `${s.intensityWord} · ${bits.join(' · ')}`;
 }
 
 function EmptyDay() {

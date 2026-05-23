@@ -1,5 +1,7 @@
 import type { Activity, DayPart, Region } from './data/types';
 import { minutesFromHM } from './utils';
+import type { ParticipantProfile } from './data/profiles';
+import { profileLovesCategory } from './data/profiles';
 
 export interface AlternativeSuggestion {
   activity: Activity;
@@ -22,7 +24,7 @@ function durationMin(a: Activity): number {
   return Math.max(0, minutesFromHM(a.endTime) - minutesFromHM(a.startTime));
 }
 
-export function suggestAlternatives(target: Activity, allActivities: Activity[], limit = 5): AlternativeSuggestion[] {
+export function suggestAlternatives(target: Activity, allActivities: Activity[], limit = 5, profile?: ParticipantProfile, participantName?: string): AlternativeSuggestion[] {
   const pool = allActivities.filter(a =>
     a.id !== target.id &&
     a.category !== 'טיסה' && a.category !== 'מלון' &&
@@ -52,6 +54,29 @@ export function suggestAlternatives(target: Activity, allActivities: Activity[],
     if (Math.abs(ad - dur) < 60) { score += 2; reasons.push('משך דומה'); }
     if (a.costLevel === target.costLevel) { score += 1; reasons.push('עלות דומה'); }
     if (!a.bookingRequired) { score += 1; reasons.push('בלי הזמנה'); }
+
+    if (profile) {
+      let profileBoosted = false;
+      if (profileLovesCategory(profile, a.category)) {
+        score += 2; profileBoosted = true;
+      }
+      if (profile.pace === 'רגוע') {
+        const adMin = durationMin(a);
+        if (adMin > 0 && adMin <= 150) { score += 2; profileBoosted = true; }
+        if (a.priority !== 'גבוה') { score += 1; }
+      }
+      // long hikes detection
+      const longHike = a.category === 'טבע' && (
+        (a.preparation || []).some(p => p.includes('נעלי הליכה')) ||
+        durationMin(a) >= 180
+      );
+      if (profile.noLongHikes && longHike) {
+        score -= 4; profileBoosted = false;
+      }
+      if (profileBoosted && participantName) {
+        reasons.unshift(`מתאים ל${participantName}`);
+      }
+    }
     return { activity: a, score, reasons };
   });
 

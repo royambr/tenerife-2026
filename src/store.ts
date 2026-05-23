@@ -30,14 +30,36 @@ function load(): AppState {
 }
 
 function migrate(s: any): AppState {
+  const baseParticipants = SEED.participants;
+  const validIds = new Set(baseParticipants.map(p => p.id));
+  // v3: real participants replace mock list; always overwrite
+  const participants = (s.schemaVersion && s.schemaVersion >= 3 && s.participants && s.participants.length)
+    ? s.participants
+    : baseParticipants;
+  const currentParticipantId = validIds.has(s.currentParticipantId)
+    ? s.currentParticipantId
+    : 'p_roy';
+  // strip stale assignedTo
+  const activities = (s.activities || SEED.activities).map((a: any) =>
+    a && a.assignedTo && !validIds.has(a.assignedTo) ? { ...a, assignedTo: undefined } : a
+  );
+  // clean votes referencing stale participants
+  const decisions = (s.decisions || SEED.decisions).map((d: any) => ({
+    ...d,
+    options: (d.options || []).map((o: any) => ({
+      ...o,
+      votes: (o.votes || []).filter((v: string) => validIds.has(v)),
+    })),
+  }));
   return {
     ...SEED,
     ...s,
-    participants: s.participants && s.participants.length ? s.participants : SEED.participants,
-    currentParticipantId: s.currentParticipantId || SEED.currentParticipantId,
+    participants,
+    currentParticipantId,
+    activities,
     changeLog: s.changeLog || [],
-    decisions: s.decisions || SEED.decisions,
-    schemaVersion: 2,
+    decisions,
+    schemaVersion: 3,
   };
 }
 

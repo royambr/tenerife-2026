@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import type { Activity } from '../data/types';
-import { CATEGORY_ICONS, STATUS_COLORS, costLabel } from '../utils';
-import { Chip } from './Chip';
+import { CATEGORY_ICONS, STATUS_COLORS } from '../utils';
 import { useEditMode } from '../store';
 import { ActivityQuickActions } from './ActivityQuickActions';
 
@@ -12,52 +11,37 @@ export function ActivityCard({ a, onClick, compact=false, onReplace }:{
   const edit = useEditMode();
   const done = a.status === 'בוצע' || a.status === 'בוטל' || a.status === 'דולג';
   const [menu, setMenu] = useState(false);
+  // strip leading "category · " duplication if the icon already says it
+  const cleanedName = a.name.replace(/^(חוף|טיול|הליכה|בוקר חוף|יום חוף)\s*·\s*/, '');
   return (
     <>
-    <div className={`relative group w-full rounded-2xl bg-white shadow-card border
-        ${edit ? 'border-volcano-900/50 ring-1 ring-volcano-900/20' : 'border-ocean-100/60'}
-        ${done ? 'opacity-60' : ''} hover:shadow-lg active:scale-[.99] transition`}>
+    <div className={`relative group w-full rounded-2xl bg-white border
+        ${edit ? 'border-volcano-900/40' : 'border-ocean-100/50'}
+        ${done ? 'opacity-55' : ''} active:scale-[.99] transition`}>
       <button
         onClick={onClick}
         type="button"
+        aria-label={a.name}
         className="w-full text-right"
       >
         <div className="flex items-stretch">
-          <div className={`w-1.5 rounded-r-2xl ${s.dot}`} />
-          <div className="flex-1 p-3.5">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="text-2xl leading-none">{CATEGORY_ICONS[a.category]}</span>
-                <div className="min-w-0">
-                  <div className="text-[15px] font-bold text-ocean-700 truncate">{a.name}</div>
-                  <div className="text-[12px] text-zinc-500 truncate flex items-center gap-1.5">
-                    <span className={`inline-block w-1.5 h-1.5 rounded-full ${s.dot}`} />
-                    <span>{a.region}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="text-left flex-shrink-0">
-                <div className="text-[12px] text-zinc-600 font-semibold tabular-nums">
-                  {a.startTime}
-                </div>
-                <div className="text-[11px] text-sunset-700 font-bold">{costLabel(a.costLevel)}</div>
-              </div>
+          <div className={`w-1 rounded-r-2xl ${s.dot}`} />
+          <div className="flex-1 p-3 flex items-center gap-2.5 min-w-0">
+            <span className="text-xl leading-none flex-shrink-0">{CATEGORY_ICONS[a.category]}</span>
+            <div className="min-w-0 flex-1">
+              <div className="text-[14px] font-semibold text-ocean-700 truncate">{cleanedName}</div>
             </div>
-            {!compact && ((a.bookingRequired && a.status !== 'הוזמן') || a.priority === 'גבוה' || a.status === 'בסיכון' || a.status === 'דורש החלטה') && (
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {a.status === 'בסיכון' && <Chip tone="red">בסיכון</Chip>}
-                {a.status === 'דורש החלטה' && <Chip tone="sunset">דורש החלטה</Chip>}
-                {a.bookingRequired && a.status !== 'הוזמן' && a.status !== 'בסיכון' && <Chip tone="sunset">צריך לסגור</Chip>}
-                {a.priority === 'גבוה' && <Chip tone="red">חשוב</Chip>}
-              </div>
-            )}
+            <div className="text-[12px] text-zinc-500 font-semibold tabular-nums flex-shrink-0">
+              {a.startTime}
+            </div>
+            <span className={`w-1.5 h-1.5 rounded-full ${s.dot} flex-shrink-0`} aria-hidden />
           </div>
         </div>
       </button>
       {edit && (
         <button onClick={(e) => { e.stopPropagation(); setMenu(true); }}
                 aria-label="פעולות מהירות"
-                className="absolute top-2 left-2 w-9 h-9 rounded-full bg-volcano-900 text-white text-lg font-bold shadow-card flex items-center justify-center">
+                className="absolute top-1.5 left-1.5 w-8 h-8 rounded-full bg-volcano-900 text-white text-base font-bold flex items-center justify-center">
           ⋮
         </button>
       )}

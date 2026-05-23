@@ -50,13 +50,12 @@ export function Schedule() {
         return (
           <section key={date} className="space-y-2 lg:bg-white lg:rounded-3xl lg:p-4 lg:border lg:border-ocean-100/60 lg:shadow-soft">
             <div className="flex items-center justify-between sticky top-0 lg:static bg-gradient-to-b from-[#f6fbfd] to-[#f6fbfd]/80 lg:bg-none backdrop-blur lg:backdrop-blur-0 z-10 -mx-4 lg:mx-0 px-4 lg:px-0 py-2 lg:py-0 lg:mb-2">
-              <div>
-                <div className="text-[15px] font-extrabold text-ocean-700">{day.title}</div>
-                <div className="text-[11px] text-zinc-500">{fmtDateLong(date)} · ישנים: {day.sleepingAt}</div>
+              <div className="min-w-0">
+                <div className="text-[14px] font-bold text-ocean-700 truncate">{day.title}</div>
+                <div className="text-[11px] text-zinc-500">{fmtDateLong(date)}</div>
               </div>
-              <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full text-white bg-gradient-to-bl ${INTENSITY_COLORS[day.intensity]}`}>
-                {day.intensity}
-              </span>
+              <span className={`w-2.5 h-2.5 rounded-full bg-gradient-to-bl ${INTENSITY_COLORS[day.intensity]}`}
+                    aria-label={day.intensity} title={day.intensity} />
             </div>
 
             {dayConflicts.slice(0, 2).map(c => (

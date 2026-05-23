@@ -30,3 +30,8 @@ button { transition: transform .12s ease, background-color .15s ease, box-shadow
   background: radial-gradient(120% 80% at 50% 0%, rgba(11,59,92,0.55), rgba(11,59,92,0.75));
   backdrop-filter: blur(4px);
 }
+
+/* hide bottom-nav labels on very small phones */
+@media (max-width: 359px) {
+  .nav-label { display: none; }
+}

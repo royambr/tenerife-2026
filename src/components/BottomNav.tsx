@@ -23,12 +23,13 @@ export function BottomNav({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => v
             <button
               key={item.id}
               onClick={() => onChange(item.id)}
+              aria-label={item.label}
               className="relative flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-semibold"
             >
               <span className={`text-xl leading-none transition-transform ${active ? 'scale-110' : 'opacity-70'}`}>
                 {item.icon}
               </span>
-              <span className={active ? 'text-ocean-700' : 'text-zinc-500'}>{item.label}</span>
+              <span className={`nav-label ${active ? 'text-ocean-700' : 'text-zinc-500'}`}>{item.label}</span>
               {active && <span className="absolute -top-1 inset-x-6 h-1 rounded-full bg-sunset-500" />}
             </button>
           );

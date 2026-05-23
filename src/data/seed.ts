@@ -309,23 +309,23 @@ const plans: Plan[] = [
 
 const checklist = [
   { id: uid('chk'), title: 'להזמין כרטיסי Loro Parque', owner: 'רועי',   dueDate: '2026-06-10', status: 'פתוח'  as const, priority: 'גבוה'  as const, category: 'הזמנה'   as const },
-  { id: uid('chk'), title: 'לסגור רכבל Teide',           owner: 'דנה',    dueDate: '2026-06-12', status: 'פתוח'  as const, priority: 'גבוה'  as const, category: 'הזמנה'   as const },
-  { id: uid('chk'), title: 'לסגור Siam Park',            owner: 'יואב',   dueDate: '2026-06-14', status: 'פתוח'  as const, priority: 'גבוה'  as const, category: 'הזמנה'   as const },
-  { id: uid('chk'), title: 'הזמנת שייט Los Gigantes',     owner: 'מאיה',   dueDate: '2026-06-14', status: 'פתוח'  as const, priority: 'גבוה'  as const, category: 'הזמנה'   as const },
+  { id: uid('chk'), title: 'לסגור רכבל Teide',           owner: 'סער',    dueDate: '2026-06-12', status: 'פתוח'  as const, priority: 'גבוה'  as const, category: 'הזמנה'   as const },
+  { id: uid('chk'), title: 'לסגור Siam Park',            owner: 'אבי',    dueDate: '2026-06-14', status: 'פתוח'  as const, priority: 'גבוה'  as const, category: 'הזמנה'   as const },
+  { id: uid('chk'), title: 'הזמנת שייט Los Gigantes',     owner: 'אסף',    dueDate: '2026-06-14', status: 'פתוח'  as const, priority: 'גבוה'  as const, category: 'הזמנה'   as const },
   { id: uid('chk'), title: 'נעלי הליכה לכולם',           owner: 'כל אחד', dueDate: '2026-06-16', status: 'פתוח'  as const, priority: 'רגיל'  as const, category: 'אריזה'   as const },
-  { id: uid('chk'), title: 'אדפטור לשקעים אירופיים',     owner: 'איתי',   dueDate: '2026-06-16', status: 'פתוח'  as const, priority: 'רגיל'  as const, category: 'אריזה'   as const },
-  { id: uid('chk'), title: 'ביטוח נסיעות לכל החבר׳ה',    owner: 'נועה',   dueDate: '2026-06-08', status: 'בתהליך'as const, priority: 'גבוה'  as const, category: 'מסמכים' as const },
+  { id: uid('chk'), title: 'אדפטור לשקעים אירופיים',     owner: 'מתן',    dueDate: '2026-06-16', status: 'פתוח'  as const, priority: 'רגיל'  as const, category: 'אריזה'   as const },
+  { id: uid('chk'), title: 'ביטוח נסיעות לכל החבר׳ה',    owner: 'גנצי',   dueDate: '2026-06-08', status: 'בתהליך'as const, priority: 'גבוה'  as const, category: 'מסמכים' as const },
   { id: uid('chk'), title: 'להחליט: Anaga או Masca ביום 19', owner: 'הקבוצה', dueDate: '2026-06-13', status: 'פתוח'  as const, priority: 'רגיל'  as const, category: 'החלטה'   as const },
 ];
 
 const participants: Participant[] = [
-  { id: 'p_roy',  name: 'רועי',  emoji: '🧭' },
-  { id: 'p_dana', name: 'דנה',   emoji: '🌊' },
-  { id: 'p_yoav', name: 'יואב',  emoji: '🏄' },
-  { id: 'p_maya', name: 'מאיה',  emoji: '🌅' },
-  { id: 'p_itay', name: 'איתי',  emoji: '🍻' },
-  { id: 'p_noa',  name: 'נועה',  emoji: '🌿' },
-  { id: 'p_tal',  name: 'טל',    emoji: '⚡' },
+  { id: 'p_roy',    name: 'רועי',  emoji: '🧭' },
+  { id: 'p_saar',   name: 'סער',   emoji: '🌊' },
+  { id: 'p_avi',    name: 'אבי',   emoji: '🎯' },
+  { id: 'p_tzvika', name: 'צביקה', emoji: '☕' },
+  { id: 'p_asaf',   name: 'אסף',   emoji: '🔥' },
+  { id: 'p_matan',  name: 'מתן',   emoji: '🌿' },
+  { id: 'p_ganzi',  name: 'גנצי',  emoji: '🍹' },
 ];
 
 const decisions: Decision[] = [
@@ -333,9 +333,9 @@ const decisions: Decision[] = [
     id: 'dec_morning_19',
     title: 'מה עושים מחר בבוקר?',
     options: [
-      { id: 'o1', label: 'Siam Park', votes: ['p_yoav','p_itay'] },
-      { id: 'o2', label: 'חוף רגוע · Playa del Duque', votes: ['p_dana'] },
-      { id: 'o3', label: 'שייט · Los Gigantes', votes: ['p_maya','p_noa'] },
+      { id: 'o1', label: 'Siam Park', votes: ['p_avi','p_asaf'] },
+      { id: 'o2', label: 'חוף רגוע · Playa del Duque', votes: ['p_tzvika','p_ganzi'] },
+      { id: 'o3', label: 'שייט · Los Gigantes', votes: ['p_saar','p_matan'] },
       { id: 'o4', label: 'Teide בשקיעה', votes: ['p_roy'] }
     ],
     status: 'פתוח',
@@ -346,12 +346,12 @@ const decisions: Decision[] = [
     id: 'dec_dinner_first',
     title: 'איפה אוכלים בערב הראשון?',
     options: [
-      { id: 'o1', label: 'טפאס מקומי · Puerto de la Cruz', votes: ['p_roy','p_dana','p_noa'] },
-      { id: 'o2', label: 'דגים על הנמל', votes: ['p_yoav','p_maya'] },
-      { id: 'o3', label: 'מסעדה איטלקית קרובה', votes: ['p_itay'] }
+      { id: 'o1', label: 'טפאס מקומי · Puerto de la Cruz', votes: ['p_roy','p_saar','p_matan'] },
+      { id: 'o2', label: 'דגים על הנמל', votes: ['p_avi','p_ganzi'] },
+      { id: 'o3', label: 'מסעדה איטלקית קרובה', votes: ['p_tzvika','p_asaf'] }
     ],
     status: 'פתוח',
-    createdBy: 'p_dana',
+    createdBy: 'p_saar',
     createdAt: Date.now() - 1000*60*60*22
   }
 ];
@@ -372,7 +372,7 @@ export const SEED: AppState = {
   currentParticipantId: 'p_roy',
   changeLog: [],
   decisions,
-  schemaVersion: 2
+  schemaVersion: 3
 };
 
 export const PLAN_IDS = { BALANCED: P1, NATURE: P2, BEACH: P3 };

@@ -5,6 +5,8 @@ import { Chip } from './Chip';
 import { CATEGORY_ICONS, STATUS_COLORS, buildMapsUrl, buildWazeUrl, costLabel } from '../utils';
 import { store, useEditMode } from '../store';
 import { ActivityEditor } from './ActivityEditor';
+import { Gallery } from './Gallery';
+import { queryForActivity } from '../data/place_queries';
 
 const STATUSES: Status[] = ['מתוכנן','הוזמן','אופציונלי','דורש החלטה','בוצע','בוטל','בסיכון','דולג'];
 
@@ -18,6 +20,7 @@ export function ActivitySheet({ activity, open, onClose, onReplace }:{
   const a = activity;
   const maps = a.mapsUrl || buildMapsUrl(a.name);
   const waze = a.wazeUrl || buildWazeUrl(a.name);
+  const galleryQuery = queryForActivity(a);
 
   if (editing) {
     return (
@@ -33,50 +36,54 @@ export function ActivitySheet({ activity, open, onClose, onReplace }:{
 
   return (
     <Sheet open={open} onClose={onClose} title={a.name}>
-      <div className="space-y-5">
+      <div className="space-y-4">
+        {/* Header row: icon + time/cost */}
         <div className="flex items-center gap-3">
-          <span className="text-4xl">{CATEGORY_ICONS[a.category]}</span>
-          <div>
-            <div className="text-[13px] text-zinc-500">{a.region} · {a.category}</div>
-            <div className="text-[14px] font-semibold text-ocean-700">
-              {a.startTime}–{a.endTime} · {costLabel(a.costLevel)}
+          <span className="text-3xl">{CATEGORY_ICONS[a.category]}</span>
+          <div className="min-w-0">
+            <div className="text-[14px] font-semibold text-ocean-700 tabular-nums">
+              {a.startTime}–{a.endTime}
             </div>
+            <div className="text-[12px] text-zinc-500">{a.region} · {costLabel(a.costLevel)}</div>
           </div>
         </div>
 
+        {galleryQuery && <Gallery query={galleryQuery} />}
+
+        {/* Chips */}
         <div className="flex flex-wrap gap-1.5">
           <Chip tone="ocean">
             <span className={`w-1.5 h-1.5 rounded-full ${STATUS_COLORS[a.status].dot}`} />{a.status}
           </Chip>
           {a.bookingRequired && <Chip tone="sunset">צריך לסגור</Chip>}
           {a.priority === 'גבוה' && <Chip tone="red">חשוב</Chip>}
+          {a.category === 'מסעדה' && <Chip tone="sand">🍽️ אסף וצביקה: בלי חזיר ובלי בשר וחלב</Chip>}
         </div>
 
         {a.description && (
-          <Section title="על הפעילות">
-            <p className="text-[14px] leading-7 text-zinc-700">{a.description}</p>
-          </Section>
+          <p className="text-[14px] leading-7 text-zinc-700">{a.description}</p>
         )}
 
         {a.whyToday && (
-          <Section title="למה זה מתאים היום?">
-            <p className="text-[14px] leading-7 text-zinc-700">{a.whyToday}</p>
-          </Section>
+          <details className="rounded-xl bg-ocean-50/60 p-3">
+            <summary className="text-[12px] font-bold text-ocean-700 cursor-pointer">למה היום?</summary>
+            <p className="text-[13px] leading-6 text-zinc-700 mt-2">{a.whyToday}</p>
+          </details>
         )}
 
-        <div className="grid grid-cols-2 gap-2.5">
-          <Stat label="משך" value={a.duration || diffStr(a.startTime, a.endTime)} />
-          <Stat label="עלות משוערת" value={a.costEstimate || costLabel(a.costLevel)} />
-          <Stat label="שעות פתיחה" value={a.openingHours || '—'} />
-          <Stat label="צריך להזמין?" value={a.bookingRequired ? 'כן' : 'לא'} />
+        <div className="grid grid-cols-2 gap-2">
+          <Stat icon="⏱️" value={a.duration || diffStr(a.startTime, a.endTime)} />
+          <Stat icon="💶" value={a.costEstimate || costLabel(a.costLevel)} />
+          {a.openingHours && <Stat icon="🕘" value={a.openingHours} />}
+          <Stat icon={a.bookingRequired ? '📌' : '✓'} value={a.bookingRequired ? 'להזמין' : 'בלי הזמנה'} />
         </div>
 
         {a.preparation && a.preparation.length > 0 && (
-          <Section title="צריך להביא / להכין">
-            <ul className="space-y-1.5">
+          <Section title="להביא">
+            <ul className="space-y-1">
               {a.preparation.map((p, i) => (
-                <li key={i} className="flex items-center gap-2 text-[14px] text-zinc-700">
-                  <span className="w-1.5 h-1.5 rounded-full bg-sunset-500" />{p}
+                <li key={i} className="flex items-center gap-2 text-[13px] text-zinc-700">
+                  <span className="w-1 h-1 rounded-full bg-sunset-500" />{p}
                 </li>
               ))}
             </ul>
@@ -84,25 +91,21 @@ export function ActivitySheet({ activity, open, onClose, onReplace }:{
         )}
 
         {a.alternatives && a.alternatives.length > 0 && (
-          <Section title="אופציות חלופיות באזור">
-            <div className="flex flex-wrap gap-1.5">
-              {a.alternatives.map((alt, i) => <Chip key={i} tone="sand">{alt}</Chip>)}
-            </div>
-          </Section>
+          <div className="flex flex-wrap gap-1.5">
+            {a.alternatives.map((alt, i) => <Chip key={i} tone="sand">{alt}</Chip>)}
+          </div>
         )}
 
         {a.groupNotes && (
-          <Section title="הערות לקבוצה">
-            <p className="text-[14px] leading-7 text-zinc-700">{a.groupNotes}</p>
-          </Section>
+          <p className="text-[13px] leading-6 text-zinc-600 bg-sand-100/60 rounded-xl p-3">{a.groupNotes}</p>
         )}
 
-        <div className="grid grid-cols-2 gap-2.5">
-          <a href={maps} target="_blank" rel="noreferrer"
+        <div className="grid grid-cols-2 gap-2">
+          <a href={maps} target="_blank" rel="noreferrer" aria-label="ניווט בגוגל מפות"
              className="rounded-2xl bg-ocean-700 text-white py-3 text-center text-sm font-bold">
-            🧭 פתח ניווט · Google
+            🧭 ניווט
           </a>
-          <a href={waze} target="_blank" rel="noreferrer"
+          <a href={waze} target="_blank" rel="noreferrer" aria-label="ניווט בוויז"
              className="rounded-2xl bg-sand-50 text-ocean-700 py-3 text-center text-sm font-bold border border-ocean-100">
             Waze
           </a>
@@ -115,8 +118,9 @@ export function ActivitySheet({ activity, open, onClose, onReplace }:{
           </a>
         )}
 
-        <Section title="עדכון סטטוס">
-          <div className="flex flex-wrap gap-1.5">
+        <details>
+          <summary className="text-[12px] font-bold text-zinc-500 cursor-pointer">שנה סטטוס</summary>
+          <div className="flex flex-wrap gap-1.5 mt-2">
             {STATUSES.map(s => {
               const active = a.status === s;
               return (
@@ -128,34 +132,39 @@ export function ActivitySheet({ activity, open, onClose, onReplace }:{
               );
             })}
           </div>
-        </Section>
+        </details>
 
-        <div className="grid grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-2 gap-2">
           <button onClick={() => store.setStatus(a.id, a.status === 'בוצע' ? 'מתוכנן' : 'בוצע')}
+                  aria-label="סמן כבוצע"
                   className="rounded-2xl bg-emerald-500 text-white py-3 text-sm font-bold">
-            ✓ סמן כבוצע
+            ✓ בוצע
           </button>
           <button onClick={() => setEditing(true)}
+                  aria-label="ערוך פעילות"
                   className="rounded-2xl bg-white border border-ocean-100 text-ocean-700 py-3 text-sm font-bold">
-            ✎ ערוך פעילות
+            ✎ ערוך
           </button>
           {onReplace && (
             <button onClick={() => { onReplace(a); onClose(); }}
+                    aria-label="החלף פעילות"
                     className="rounded-2xl bg-sunset-500 text-white py-3 text-sm font-bold col-span-2">
-              🔄 החלף פעילות
+              🔄 החלף
             </button>
           )}
         </div>
 
         {edit && (
-          <div className="grid grid-cols-2 gap-2.5 pt-2 border-t border-ocean-100/60">
+          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-ocean-100/60">
             <button onClick={() => { store.duplicateActivity(a.id); }}
+                    aria-label="שכפל"
                     className="rounded-2xl bg-sand-100 text-ocean-700 py-3 text-sm font-bold">
-              שכפל פעילות
+              📋 שכפל
             </button>
             <button onClick={() => { if (confirm('למחוק את הפעילות?')) { store.deleteActivity(a.id); onClose(); } }}
+                    aria-label="מחק"
                     className="rounded-2xl bg-red-50 text-red-600 py-3 text-sm font-bold">
-              מחק
+              🗑️ מחק
             </button>
           </div>
         )}
@@ -172,11 +181,11 @@ function Section({ title, children }:{ title: string; children: React.ReactNode 
     </div>
   );
 }
-function Stat({ label, value }:{ label: string; value: React.ReactNode }) {
+function Stat({ icon, value }:{ icon: string; value: React.ReactNode }) {
   return (
-    <div className="rounded-2xl bg-ocean-50/60 p-3">
-      <div className="text-[11px] text-zinc-500">{label}</div>
-      <div className="text-[14px] font-bold text-ocean-700 mt-0.5">{value}</div>
+    <div className="rounded-xl bg-ocean-50/60 px-3 py-2 flex items-center gap-2">
+      <span className="text-base leading-none">{icon}</span>
+      <div className="text-[13px] font-bold text-ocean-700">{value}</div>
     </div>
   );
 }

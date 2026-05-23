@@ -3,6 +3,7 @@ import { useStore, store } from '../store';
 import { Chip } from '../components/Chip';
 import { Sheet } from '../components/Sheet';
 import type { ChecklistItem, Decision } from '../data/types';
+import { PROFILES } from '../data/profiles';
 
 export function Manage() {
   const trip = useStore(s => s.trip);
@@ -22,6 +23,7 @@ export function Manage() {
   const [newDecision, setNewDecision] = useState(false);
 
   const me = participants.find(p => p.id === currentId);
+  const meProfile = PROFILES[currentId];
 
   return (
     <div className="p-4 pb-2 space-y-4 animate-fade-up lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-5 lg:space-y-0 lg:items-start">
@@ -31,22 +33,26 @@ export function Manage() {
       </header>
 
       {/* Participant switcher */}
-      <div className="rounded-2xl bg-white border border-ocean-100 shadow-soft p-3 lg:col-span-full">
-        <div className="flex items-center justify-between mb-2">
-          <div className="text-[12px] font-extrabold text-ocean-700">👤 מי מעדכן עכשיו?</div>
-          {me && <span className="text-[11px] text-zinc-500">פעיל: {me.emoji} {me.name}</span>}
-        </div>
+      <div className="rounded-2xl bg-white border border-ocean-100 p-3 lg:col-span-full">
+        <div className="text-[12px] font-bold text-ocean-700 mb-2">👤 מי מעדכן עכשיו?</div>
         <div className="flex flex-wrap gap-1.5">
           {participants.map(p => (
             <button key={p.id} onClick={() => store.setCurrentParticipant(p.id)}
-                    className={`min-h-[36px] rounded-full px-3 py-1.5 text-[12px] font-bold transition
+                    aria-label={p.name}
+                    className={`min-h-[36px] rounded-full px-3 py-1.5 text-[12px] font-semibold transition
                       ${p.id === currentId
-                        ? 'bg-ocean-700 text-white shadow-soft'
-                        : 'bg-ocean-50 text-ocean-700 hover:bg-ocean-100'}`}>
+                        ? 'bg-ocean-700 text-white'
+                        : 'bg-ocean-50 text-ocean-700'}`}>
               <span className="ml-1">{p.emoji}</span>{p.name}
             </button>
           ))}
         </div>
+        {me && meProfile && (
+          <div className="mt-2.5 text-[12px] text-zinc-600 leading-5 flex items-start gap-1.5">
+            <span>{me.emoji}</span>
+            <span><span className="font-bold text-ocean-700">{me.name}:</span> {meProfile.blurb}</span>
+          </div>
+        )}
       </div>
 
       {/* Decisions */}
@@ -68,23 +74,23 @@ export function Manage() {
         </div>
       </Card>
 
-      <Card title="✈️ טיסות">
+      <CollapsibleCard title="✈️ טיסות" count={flights.length}>
         {flights.map(f => (
           <Row key={f.id} title={f.name} sub={`${f.dayDate} · ${f.startTime}`} tone="emerald" right={f.status} />
         ))}
-      </Card>
+      </CollapsibleCard>
 
-      <Card title="🏨 לינה">
+      <CollapsibleCard title="🏨 לינה" count={hotels.length}>
         {hotels.map(h => (
           <Row key={h.id} title={h.name} sub={`${h.dayDate} · ${h.region}`} tone="ocean" right={h.status} />
         ))}
-      </Card>
+      </CollapsibleCard>
 
-      <Card title="📌 לסגור עכשיו" emptyText="הכל סגור — כיף!">
+      <CollapsibleCard title="📌 לסגור עכשיו" count={toBook.length} emptyText="הכל סגור — כיף!">
         {toBook.slice(0, 6).map(b => (
           <Row key={b.id} title={b.name} sub={`${b.dayDate} · ${b.region}`} tone="sunset" right="צריך הזמנה" />
         ))}
-      </Card>
+      </CollapsibleCard>
 
       {/* Checklist */}
       <div className="lg:col-span-full">
@@ -151,17 +157,17 @@ export function Manage() {
         </div>
       </Card>
 
-      <Card title="📞 שימושי וחירום">
+      <CollapsibleCard title="📞 שימושי וחירום" count={3}>
         <Row title="חירום באירופה" sub="חיוג: 112" tone="red" />
         <Row title="שגרירות ישראל במדריד" sub="+34 91 782 9500" tone="ocean" />
         <Row title="ביטוח נסיעות" sub="פרטים בקבוצת WhatsApp" tone="emerald" />
-      </Card>
+      </CollapsibleCard>
 
-      <Card title="🔗 קישורים">
+      <CollapsibleCard title="🔗 קישורים" count={3}>
         <a href="https://www.siampark.net" target="_blank" rel="noreferrer" className="block py-2 text-[13px] text-ocean-700 font-bold border-b border-ocean-100/60">Siam Park</a>
         <a href="https://www.volcanoteide.com" target="_blank" rel="noreferrer" className="block py-2 text-[13px] text-ocean-700 font-bold border-b border-ocean-100/60">Teide Cable Car</a>
         <a href="https://www.loroparque.com" target="_blank" rel="noreferrer" className="block py-2 text-[13px] text-ocean-700 font-bold">Loro Parque</a>
-      </Card>
+      </CollapsibleCard>
 
       <button onClick={() => { if (confirm('לאפס את כל הנתונים לערכי הברירה?')) store.reset(); }}
               className="w-full rounded-2xl bg-white border border-red-200 text-red-600 py-3 text-sm font-bold lg:col-span-full min-h-[44px]">
@@ -296,12 +302,28 @@ function ChecklistEditor({ initial, onSave, onCancel }:{
 function Card({ title, children, emptyText, className='' }:{ title: string; children: React.ReactNode; emptyText?: string; className?: string }) {
   const arr = React.Children.toArray(children);
   return (
-    <div className={`rounded-2xl bg-white border border-ocean-100 shadow-soft p-3.5 ${className}`}>
-      <div className="text-[13px] font-extrabold text-ocean-700 mb-2">{title}</div>
+    <div className={`rounded-2xl bg-white border border-ocean-100 p-3 ${className}`}>
+      <div className="text-[13px] font-bold text-ocean-700 mb-2">{title}</div>
       <div className="space-y-1.5">
         {arr.length > 0 ? arr : <div className="text-[12px] text-zinc-500">{emptyText || '—'}</div>}
       </div>
     </div>
+  );
+}
+function CollapsibleCard({ title, children, emptyText, count, className='' }:{
+  title: string; children: React.ReactNode; emptyText?: string; count?: number; className?: string;
+}) {
+  const arr = React.Children.toArray(children);
+  return (
+    <details className={`rounded-2xl bg-white border border-ocean-100 p-3 group ${className}`}>
+      <summary className="flex items-center justify-between cursor-pointer list-none">
+        <div className="text-[13px] font-bold text-ocean-700">{title}{count !== undefined && count > 0 && <span className="text-zinc-400 font-semibold mr-1.5">· {count}</span>}</div>
+        <span className="text-zinc-400 text-xs group-open:rotate-180 transition">▾</span>
+      </summary>
+      <div className="space-y-1.5 mt-2">
+        {arr.length > 0 ? arr : <div className="text-[12px] text-zinc-500">{emptyText || '—'}</div>}
+      </div>
+    </details>
   );
 }
 function Row({ title, sub, tone='ocean', right }:{ title: string; sub?: string; tone?: any; right?: string }) {

@@ -197,37 +197,42 @@ function IconMeter({ value, max, icon }:{ value: number; max: number; icon: stri
 }
 
 function PlanCard({ plan, active, onSelect }:{ plan: Plan; active: boolean; onSelect: () => void }) {
+  const [open, setOpen] = useState(false);
   return (
-    <div className={`rounded-3xl overflow-hidden shadow-card border transition
+    <div className={`rounded-3xl overflow-hidden border transition
       ${active ? 'border-sunset-500' : 'border-ocean-100'}`}>
       <div className={`bg-gradient-to-bl ${PLAN_GRADIENTS[plan.id]} text-white p-4`}>
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className="text-[18px] font-extrabold">{plan.name}</h3>
-              {active && <span className="bg-white/25 backdrop-blur rounded-full px-2 py-0.5 text-[10px] font-extrabold">✓ פעיל</span>}
-            </div>
-            <div className="text-[12px] opacity-90 mt-0.5">{plan.vibe}</div>
-          </div>
+          <h3 className="text-[18px] font-extrabold min-w-0 truncate">{plan.name}{active && <span className="mr-1.5 text-[10px] bg-white/25 rounded-full px-2 py-0.5">✓</span>}</h3>
           <button onClick={onSelect}
-                  className={`text-[11px] font-extrabold px-3 py-1.5 rounded-full whitespace-nowrap min-h-[36px]
+                  aria-label={active ? 'תוכנית נבחרה' : 'הפוך לפעיל'}
+                  className={`text-[11px] font-bold px-3 py-1.5 rounded-full whitespace-nowrap min-h-[36px]
                     ${active ? 'bg-white/25 text-white' : 'bg-white text-ocean-700'}`}>
-            {active ? '✓ נבחר' : 'הפוך לפעיל'}
+            {active ? '✓ נבחר' : 'בחר'}
           </button>
         </div>
       </div>
-      <div className="bg-white p-3.5 space-y-3">
+      <div className="bg-white p-3 space-y-2.5">
         <div className="grid grid-cols-5 gap-1.5">
           {AXES.map(ax => (
-            <div key={ax.id} className="text-center">
-              <div className="text-[9px] text-zinc-500 mb-0.5">{ax.label}</div>
+            <div key={ax.id} className="text-center" title={ax.label}>
               <IconMeter value={ax.get(plan)} max={ax.max} icon={ax.icon} />
             </div>
           ))}
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          {plan.highlights.map((h, i) => <Chip key={i} tone="sand">⭐ {h}</Chip>)}
-        </div>
+        <button onClick={() => setOpen(v => !v)} aria-label="פרטים נוספים"
+                className="text-[11px] text-ocean-700 font-bold w-full text-right">
+          {open ? '▴ פחות' : '▾ עוד'}
+        </button>
+        {open && (
+          <>
+            <div className="text-[12px] text-zinc-600 leading-5">{plan.description}</div>
+            <div className="text-[12px] text-ocean-700 italic">"{plan.vibe}"</div>
+            <div className="flex flex-wrap gap-1.5">
+              {plan.highlights.map((h, i) => <Chip key={i} tone="sand">⭐ {h}</Chip>)}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

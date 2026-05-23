@@ -5,14 +5,19 @@ import { Chip } from './Chip';
 import { suggestAlternatives, AlternativeSuggestion } from '../livemode';
 import { CATEGORY_ICONS, costLabel } from '../utils';
 import { store, useStore } from '../store';
+import { PROFILES } from '../data/profiles';
 
 export function AlternativesSheet({ target, open, onClose }:{
   target: Activity | null; open: boolean; onClose: () => void;
 }) {
   const all = useStore(s => s.activities);
+  const participants = useStore(s => s.participants);
+  const currentId = useStore(s => s.currentParticipantId);
+  const profile = PROFILES[currentId];
+  const meName = participants.find(p => p.id === currentId)?.name;
   const suggestions = useMemo(() =>
-    target ? suggestAlternatives(target, all) : [],
-    [target, all]
+    target ? suggestAlternatives(target, all, 5, profile, meName) : [],
+    [target, all, profile, meName]
   );
   const [picked, setPicked] = useState<AlternativeSuggestion | null>(null);
 
