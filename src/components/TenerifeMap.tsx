@@ -18,45 +18,49 @@ function heatColor(count: number): string {
   return '#d8541a';
 }
 
-// Real-ish Tenerife coastline path, projected from ~35 lat/lng points to a 1000×600 viewBox.
-// Projection: lng [-16.95, -16.08] → x [0, 1000], lat [27.97, 28.62] → y [600, 0].
+// Real-ish Tenerife coastline projected from ~68 lat/lng points to a 1000×600 viewBox.
+// Includes pronounced Anaga (NE) and Teno (NW / Punta de Teno) peninsulas plus El Médano (S).
+// Projection: x = (lng + 16.95) / 0.87 * 1000, y = (28.62 - lat) / 0.65 * 600.
 const COAST_PATH =
-  'M 865.5,49.8 L 895.4,35.1 L 911.5,36.0 L 950.6,41.5 L 970.1,60.9 L 956.3,92.3 ' +
-  'L 885.1,129.2 L 839.1,156.9 L 793.1,193.8 L 758.6,249.2 L 701.1,304.6 L 609.2,360.0 ' +
-  'L 505.7,433.8 L 379.3,526.2 L 298.9,567.7 L 252.9,574.2 L 183.9,553.8 L 137.9,498.5 ' +
-  'L 103.4,443.1 L 92.0,387.7 L 103.4,327.7 L 126.4,267.7 L 46.0,253.8 L 28.7,244.6 ' +
-  'L 36.8,230.8 L 92.0,207.7 L 155.2,175.4 L 206.9,138.5 L 287.4,101.5 L 379.3,64.6 ' +
-  'L 471.3,36.9 L 574.7,20.3 L 655.2,23.1 L 747.1,35.1 L 804.6,43.4 Z';
+  'M 936.8,41.5 L 971.3,44.3 L 994.3,40.6 L 1011.5,32.3 L 1028.7,35.1 L 1040.2,41.5 ' +
+  'L 1046.0,48.9 L 1023.0,60.0 L 994.3,66.5 L 959.8,75.7 L 931.0,83.1 L 902.3,96.9 ' +
+  'L 873.6,110.8 L 839.1,124.6 L 804.6,138.5 L 758.6,147.7 L 712.6,166.2 L 655.2,198.5 ' +
+  'L 609.2,235.4 L 551.7,276.9 L 505.7,323.1 L 471.3,369.2 L 431.0,415.4 L 402.3,461.5 ' +
+  'L 379.3,503.1 L 373.6,535.4 L 390.8,558.5 L 408.0,572.3 L 434.5,574.2 L 454.0,567.7 ' +
+  'L 454.0,553.8 L 425.3,535.4 L 373.6,512.3 L 310.3,489.2 L 252.9,466.2 L 201.1,438.5 ' +
+  'L 155.2,410.8 L 132.2,383.1 L 120.7,355.4 L 109.2,327.7 L 103.4,304.6 L 92.0,286.2 ' +
+  'L 74.7,272.3 L 51.7,258.5 L 34.5,251.1 L 25.3,246.5 L 34.5,241.8 L 51.7,238.2 ' +
+  'L 74.7,230.8 L 92.0,219.7 L 109.2,207.7 L 128.7,193.8 L 155.2,180.0 L 195.4,170.8 ' +
+  'L 229.9,166.2 L 270.1,170.8 L 310.3,177.2 L 356.3,184.6 L 396.6,193.8 L 436.8,198.5 ' +
+  'L 471.3,195.7 L 523.0,184.6 L 574.7,170.8 L 632.2,156.9 L 683.9,138.5 L 724.1,120.0 ' +
+  'L 758.6,101.5 L 804.6,83.1 L 862.1,60.0 L 913.8,44.3 Z';
 
-// Region centroids projected to same viewBox.
+// Region centroids projected to same viewBox — placed on/near coast per region semantics.
 type RegionId = Exclude<Region, 'מחוץ לטנריף'>;
 const REGION_POS: Record<RegionId, { x: number; y: number }> = {
-  'צפון':         { x: 459.8, y: 193.8 },
-  'צפון-מזרח':   { x: 747.1, y: 110.8 },
-  'צפון-מערב':   { x: 218.4, y: 230.8 },
-  'מרכז':         { x: 356.3, y: 323.1 },
-  'מרכז-מערב':   { x: 126.4, y: 341.5 },
-  'מרכז-מזרח':   { x: 540.2, y: 276.9 },
-  'דרום':         { x: 241.4, y: 498.5 },
-  'דרום-מזרח':   { x: 459.8, y: 535.4 },
-  'דרום-מערב':   { x: 137.9, y: 406.2 },
+  'צפון':         { x: 459.8, y: 189.2 },
+  'צפון-מזרח':   { x: 747.1, y: 115.4 },
+  'צפון-מערב':   { x: 195.4, y: 184.6 },
+  'מרכז':         { x: 354.0, y: 320.3 },
+  'מרכז-מערב':   { x: 132.2, y: 341.5 },
+  'מרכז-מזרח':   { x: 655.2, y: 244.6 },
+  'דרום':         { x: 252.9, y: 493.8 },
+  'דרום-מזרח':   { x: 448.3, y: 535.4 },
+  'דרום-מערב':   { x: 160.9, y: 406.2 },
 };
 
-// Optional label offset (dx, dy) for bubbles that would otherwise crowd — keep most at 0,0.
-// Nudge bubbles that would otherwise overlap. Leader line is drawn when nonzero.
-const LABEL_OFFSET: Partial<Record<RegionId, { dx: number; dy: number }>> = {
-  'דרום-מערב': { dx: -10, dy: 30 },
-};
+// Optional label offset (dx, dy) for bubbles that would otherwise crowd — leader line drawn when nonzero.
+const LABEL_OFFSET: Partial<Record<RegionId, { dx: number; dy: number }>> = {};
 
 const POI = [
-  { id: 'teide',   x: 354.0, y: 320.3, emoji: '🌋', label: 'טיידה' },
-  { id: 'tfn',     x: 700.0, y: 124.6, emoji: '✈️', label: 'נמל TFN' },
-  { id: 'aguilas', x: 463.2, y: 191.1, emoji: '🏨', label: 'מלון Las Aguilas' },
+  { id: 'teide',   x: 354.0, y: 320.3, emoji: '🌋', label: 'טיידה',           dx: 36, dy: -2 },
+  { id: 'tfn',     x: 700.0, y: 124.6, emoji: '✈️', label: 'נמל TFN',         dx: -36, dy: 0 },
+  { id: 'aguilas', x: 463.2, y: 191.1, emoji: '🏨', label: 'מלון Las Aguilas', dx: 32, dy: 4 },
 ];
 
 const REGION_IDS = Object.keys(REGION_POS) as RegionId[];
 
-const BUBBLE_R = 30;
+const BUBBLE_R = 26;
 
 export function TenerifeMap({ activitiesByRegion, selected, onSelect }: Props) {
   return (
@@ -64,7 +68,7 @@ export function TenerifeMap({ activitiesByRegion, selected, onSelect }: Props) {
       <div className="px-2 pt-1.5 pb-1">
         <div className="text-[13px] font-extrabold text-ocean-700">טנריף · המפה שלנו</div>
       </div>
-      <svg viewBox="0 0 1000 600" className="w-full h-auto" role="img" aria-label="מפת טנריף">
+      <svg viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet" className="w-full h-auto" role="img" aria-label="מפת טנריף">
         <defs>
           <linearGradient id="sea" x1="0" x2="0" y1="0" y2="1">
             <stop offset="0%" stopColor="#eaf6fb" />
@@ -72,12 +76,12 @@ export function TenerifeMap({ activitiesByRegion, selected, onSelect }: Props) {
             <stop offset="100%" stopColor="#b9deeb" />
           </linearGradient>
           <linearGradient id="island" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="#f4ead6" />
-            <stop offset="60%" stopColor="#e7d6ac" />
-            <stop offset="100%" stopColor="#caa86f" />
+            <stop offset="0%" stopColor="#f7eed5" />
+            <stop offset="60%" stopColor="#f3e5c5" />
+            <stop offset="100%" stopColor="#e6d3a4" />
           </linearGradient>
           <filter id="islandShadow" x="-10%" y="-10%" width="120%" height="120%">
-            <feDropShadow dx="0" dy="4" stdDeviation="5" floodColor="#0b3b5c" floodOpacity="0.22" />
+            <feDropShadow dx="0" dy="3" stdDeviation="4" floodColor="#0b3b5c" floodOpacity="0.18" />
           </filter>
           <filter id="bubbleShadow" x="-30%" y="-30%" width="160%" height="160%">
             <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#0b3b5c" floodOpacity="0.28" />
@@ -86,6 +90,9 @@ export function TenerifeMap({ activitiesByRegion, selected, onSelect }: Props) {
 
         {/* sea backdrop */}
         <rect width="1000" height="600" fill="url(#sea)" />
+
+        {/* "ים" hint label top-right ocean */}
+        <text x="980" y="22" textAnchor="end" fontSize="12" fontWeight="800" fill="#0b3b5c" opacity="0.55">ים</text>
 
         {/* subtle wave hints */}
         <g stroke="#7cc1dc" strokeOpacity="0.35" strokeWidth="1.2" fill="none">
@@ -96,23 +103,26 @@ export function TenerifeMap({ activitiesByRegion, selected, onSelect }: Props) {
 
         {/* island */}
         <g filter="url(#islandShadow)">
-          <path d={COAST_PATH} fill="url(#island)" stroke="#8a6a37" strokeWidth="1.4" strokeLinejoin="round" />
+          <path d={COAST_PATH} fill="url(#island)" opacity="0.95" stroke="#a78a52" strokeWidth="1.2" strokeLinejoin="round" />
         </g>
 
         {/* subtle interior texture (mountain ridge hint) */}
-        <g opacity="0.35" fill="none" stroke="#a8854a" strokeWidth="1">
+        <g opacity="0.3" fill="none" stroke="#a8854a" strokeWidth="1">
           <path d="M 200,300 Q 320,260 420,330 Q 540,400 700,290" />
           <path d="M 260,360 Q 380,330 480,380 Q 600,430 740,350" />
         </g>
 
-        {/* POIs */}
+        {/* POIs — emoji + tiny shadow, no big white circle */}
         <g>
-          {POI.map(p => (
-            <g key={p.id} className="pointer-events-none">
-              <circle cx={p.x} cy={p.y} r="13" fill="#ffffff" opacity="0.85" />
-              <text x={p.x} y={p.y + 5} textAnchor="middle" fontSize="16">{p.emoji}</text>
-            </g>
-          ))}
+          {POI.map(p => {
+            const px = p.x + (p.dx ?? 0);
+            const py = p.y + (p.dy ?? 0);
+            return (
+              <g key={p.id} className="pointer-events-none" filter="url(#bubbleShadow)">
+                <text x={px} y={py + 5} textAnchor="middle" fontSize="16">{p.emoji}</text>
+              </g>
+            );
+          })}
         </g>
 
         {/* region bubbles */}
@@ -132,6 +142,8 @@ export function TenerifeMap({ activitiesByRegion, selected, onSelect }: Props) {
               .sort((a,b) => (b.priority === 'גבוה' ? 1 : 0) - (a.priority === 'גבוה' ? 1 : 0))
               .slice(0, 2);
 
+            const r = isSel ? BUBBLE_R + 3 : BUBBLE_R;
+
             return (
               <g key={rid}
                  className="cursor-pointer"
@@ -144,27 +156,31 @@ export function TenerifeMap({ activitiesByRegion, selected, onSelect }: Props) {
                         stroke="#0b3b5c" strokeOpacity="0.4" strokeWidth="1" strokeDasharray="3 2" />
                 )}
                 <g filter="url(#bubbleShadow)">
-                  <circle cx={x} cy={y} r={BUBBLE_R}
+                  <circle cx={x} cy={y} r={r}
                           fill={fill}
                           stroke={isSel ? '#ff7a3d' : '#ffffff'}
                           strokeWidth={isSel ? 4 : 2.5}
                           style={{ transition: 'all .15s' }} />
+                  {isSel && (
+                    <circle cx={x} cy={y} r={r + 4}
+                            fill="none" stroke="#ff7a3d" strokeOpacity="0.45" strokeWidth="2" />
+                  )}
                 </g>
                 {/* count */}
-                <text x={x} y={y - 4} textAnchor="middle"
+                <text x={x} y={y - 3} textAnchor="middle"
                       className="select-none pointer-events-none"
-                      fontSize="18" fontWeight="900" fill="#0b3b5c">{acts.length}</text>
+                      fontSize="19" fontWeight="900" fill="#0b3b5c">{acts.length}</text>
                 {/* region name */}
-                <text x={x} y={y + 11} textAnchor="middle"
+                <text x={x} y={y + 12} textAnchor="middle"
                       className="select-none pointer-events-none"
-                      fontSize="9.5" fontWeight="800" fill="#0b3b5c">{rid}</text>
+                      fontSize="8.5" fontWeight="800" fill="#0b3b5c">{rid}</text>
                 {/* category icons floating under the bubble */}
                 {top.length > 0 && (
                   <g className="pointer-events-none">
                     {top.map((a, i) => (
                       <text key={a.id}
                             x={x - 10 + i * 20}
-                            y={y + BUBBLE_R + 13}
+                            y={y + r + 12}
                             textAnchor="middle"
                             fontSize="13"
                             className="select-none">
@@ -178,23 +194,23 @@ export function TenerifeMap({ activitiesByRegion, selected, onSelect }: Props) {
           })}
         </g>
 
-        {/* compass */}
-        <g transform="translate(940, 60)" className="pointer-events-none">
-          <circle r="24" fill="#fff" stroke="#0b3b5c" strokeWidth="1.5" opacity="0.95" />
-          <text textAnchor="middle" y="-6" fontSize="11" fontWeight="900" fill="#0b3b5c">N</text>
-          <line x1="0" y1="-2" x2="0" y2="12" stroke="#ff7a3d" strokeWidth="2" />
-          <text textAnchor="middle" y="22" fontSize="9" fontWeight="700" fill="#0b3b5c">S</text>
+        {/* compass — moved to empty SW ocean corner, smaller */}
+        <g transform="translate(50, 555)" className="pointer-events-none">
+          <circle r="18" fill="#fff" stroke="#0b3b5c" strokeWidth="1.2" opacity="0.95" />
+          <text textAnchor="middle" y="-5" fontSize="9" fontWeight="900" fill="#0b3b5c">N</text>
+          <line x1="0" y1="-1" x2="0" y2="9" stroke="#ff7a3d" strokeWidth="1.8" />
+          <text textAnchor="middle" y="17" fontSize="8" fontWeight="700" fill="#0b3b5c">S</text>
         </g>
       </svg>
 
-      {/* legend */}
-      <div className="flex flex-wrap items-center gap-2 text-[10px] text-zinc-600 px-2 py-1.5">
+      {/* legend — single line, compact */}
+      <div className="flex flex-nowrap items-center gap-1.5 text-[9.5px] text-zinc-600 px-2 py-1 overflow-x-auto">
         <span className="font-bold text-ocean-700">צפיפות:</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full" style={{background:'#bfe0ed'}}/>מעט</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full" style={{background:'#7cc1dc'}}/>בינוני</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full" style={{background:'#ff7a3d'}}/>הרבה</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full" style={{background:'#d8541a'}}/>מאוד</span>
-        <span className="mx-1 text-zinc-300">·</span>
+        <span className="flex items-center gap-0.5"><span className="w-2.5 h-2.5 rounded-full" style={{background:'#bfe0ed'}}/>מעט</span>
+        <span className="flex items-center gap-0.5"><span className="w-2.5 h-2.5 rounded-full" style={{background:'#7cc1dc'}}/>בינוני</span>
+        <span className="flex items-center gap-0.5"><span className="w-2.5 h-2.5 rounded-full" style={{background:'#ff7a3d'}}/>הרבה</span>
+        <span className="flex items-center gap-0.5"><span className="w-2.5 h-2.5 rounded-full" style={{background:'#d8541a'}}/>מאוד</span>
+        <span className="mx-0.5 text-zinc-300">·</span>
         <span>🌋 טיידה</span>
         <span>✈️ TFN</span>
         <span>🏨 מלון</span>
