@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { height: 100%; }
+body {
+  font-family: 'Heebo', system-ui, sans-serif;
+  background: linear-gradient(180deg, #f6fbfd 0%, #fbf6ee 100%);
+  color: #0b3b5c;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+* { box-sizing: border-box; }
+
+.safe-bottom { padding-bottom: calc(env(safe-area-inset-bottom) + 84px); }
+@media (min-width: 1024px) { .safe-bottom { padding-bottom: 1.5rem; } }
+.safe-top    { padding-top: calc(env(safe-area-inset-top) + 12px); }
+
+/* hide scrollbars but keep scroll */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* button tap feedback */
+button:active { transform: scale(0.98); }
+button { transition: transform .12s ease, background-color .15s ease, box-shadow .15s ease; }
+
+/* sheet backdrop */
+.backdrop {
+  background: radial-gradient(120% 80% at 50% 0%, rgba(11,59,92,0.55), rgba(11,59,92,0.75));
+  backdrop-filter: blur(4px);
+}
