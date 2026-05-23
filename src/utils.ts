@@ -7,6 +7,15 @@ export function fmtDateLong(date: string) {
   const d = new Date(date + 'T00:00:00');
   return `יום ${HEB_DAYS[d.getDay()]} · ${d.getDate()} ב${HEB_MONTHS[d.getMonth()]}`;
 }
+export function timeAgoHe(ts: number) {
+  const diff = (Date.now() - ts) / 1000;
+  if (diff < 60) return 'עכשיו';
+  if (diff < 3600) return `לפני ${Math.floor(diff/60)} דק׳`;
+  if (diff < 86400) return `לפני ${Math.floor(diff/3600)} שעות`;
+  if (diff < 172800) return 'אתמול';
+  const d = new Date(ts);
+  return `${d.getDate()}/${d.getMonth()+1}`;
+}
 export function fmtDateShort(date: string) {
   const d = new Date(date + 'T00:00:00');
   return `${d.getDate()}/${d.getMonth()+1}`;

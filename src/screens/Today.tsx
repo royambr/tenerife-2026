@@ -10,6 +10,7 @@ import { Chip } from '../components/Chip';
 import { detectConflicts, summarizeDay, dayPaceScore } from '../livemode';
 import type { Activity } from '../data/types';
 import { AlternativesSheet } from '../components/AlternativesSheet';
+import { TripJournal } from '../components/TripJournal';
 import { PROFILES } from '../data/profiles';
 import { useWeather, weatherEmoji, findWeather } from '../data/weather';
 import { dayCostForParticipant, tripCostForParticipant } from '../data/costs';
@@ -36,6 +37,7 @@ export function Today() {
   const [sel, setSel] = useState<Activity | null>(null);
   const [altFor, setAltFor] = useState<Activity | null>(null);
   const [geoLoading, setGeoLoading] = useState(false);
+  const [showJournal, setShowJournal] = useState(false);
   const userLoc = useGeo();
 
   const day = plan.days.find(d => d.date === activeDate)!;
@@ -133,6 +135,10 @@ export function Today() {
         {avgAttendees !== null && <Chip tone="emerald">👥 {avgAttendees} בממוצע</Chip>}
         <Chip tone="emerald">💶 ~€{dayCost} לאיש</Chip>
         {rainyWaterWarn && <Chip tone="sunset">🌧️ צפוי גשם — לבדוק שייט/חוף</Chip>}
+        <button onClick={() => setShowJournal(true)}
+                className="rounded-full bg-sunset-500 text-white px-2.5 py-1 text-[11px] font-extrabold min-h-[28px]">
+          📔 היומן שלנו
+        </button>
       </div>
 
       {/* One-line context sentence */}
@@ -318,6 +324,7 @@ export function Today() {
 
       <ActivitySheet activity={sel} open={!!sel} onClose={() => setSel(null)} onReplace={(a) => { setSel(null); setAltFor(a); }} />
       <AlternativesSheet target={altFor} open={!!altFor} onClose={() => setAltFor(null)} />
+      <TripJournal open={showJournal} onClose={() => setShowJournal(false)} />
     </div>
   );
 }

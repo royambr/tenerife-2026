@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { Activity, AppState, ChangeLogEntry, ChecklistItem, DayPart, Decision } from './data/types';
+import type { Activity, AppState, ChangeLogEntry, ChatMessage, ChecklistItem, DayPart, Decision, Expense, Settlement, TripPhoto } from './data/types';
 import { SEED } from './data/seed';
 
 const KEY = 'tenerife_2026_state_v2';
@@ -74,7 +74,10 @@ function migrate(s: any): AppState {
     activities,
     changeLog: s.changeLog || [],
     decisions,
-    schemaVersion: 4,
+    photos: Array.isArray(s.photos) ? s.photos : [],
+    expenses: Array.isArray(s.expenses) ? s.expenses : [],
+    settlements: Array.isArray(s.settlements) ? s.settlements : [],
+    schemaVersion: 5,
   };
 }
 
@@ -308,6 +311,106 @@ export const store = {
     log({ action: 'decision_new', scope: 'decision', summary: `החלטה חדשה: "${title}"`, afterSnapshot: d });
     emit();
   },
+  // ---------- chat ----------
+  postMessage(activityId: string, text: string, photoIds?: string[]) {
+    const before = state.activities.find(a => a.id === activityId);
+    if (!before || !text.trim()) return;
+    const msg: ChatMessage = {
+      id: uid('msg'),
+      ts: Date.now(),
+      who: state.currentParticipantId,
+      text: text.trim(),
+      photoIds,
+    };
+    const after = { ...before, messages: [...(before.messages || []), msg] };
+    state = { ...state, activities: state.activities.map(a => a.id === activityId ? after : a) };
+    log({ action: 'msg_add', summary: `הודעה ב"${before.name}"`, beforeSnapshot: before, afterSnapshot: after });
+    emit();
+  },
+  deleteMessage(activityId: string, messageId: string) {
+    const before = state.activities.find(a => a.id === activityId);
+    if (!before || !before.messages) return;
+    const after = { ...before, messages: before.messages.filter(m => m.id !== messageId) };
+    state = { ...state, activities: state.activities.map(a => a.id === activityId ? after : a) };
+    log({ action: 'msg_del', summary: `נמחקה הודעה ב"${before.name}"`, beforeSnapshot: before, afterSnapshot: after });
+    emit();
+  },
+  // ---------- photos ----------
+  addPhoto(activityId: string, dataUrl: string, caption?: string) {
+    const act = state.activities.find(a => a.id === activityId);
+    if (!act) return;
+    if (state.photos.length >= 30) {
+      toast('הזיכרון מלא — מחק תמונות ישנות');
+      return;
+    }
+    const p: TripPhoto = {
+      id: uid('ph'),
+      activityId,
+      dayDate: act.dayDate,
+      who: state.currentParticipantId,
+      ts: Date.now(),
+      dataUrl,
+      caption,
+    };
+    const next = [...state.photos, p];
+    const prev = state;
+    state = { ...state, photos: next };
+    try {
+      persist();
+    } catch {
+      state = prev;
+      toast('הזיכרון מלא — מחק תמונות ישנות');
+      return;
+    }
+    log({ action: 'photo_add', summary: `נוספה תמונה ב"${act.name}"`, afterSnapshot: p });
+    emit();
+  },
+  deletePhoto(photoId: string) {
+    const before = state.photos.find(p => p.id === photoId);
+    if (!before) return;
+    state = { ...state, photos: state.photos.filter(p => p.id !== photoId) };
+    const act = state.activities.find(a => a.id === before.activityId);
+    log({ action: 'photo_del', summary: `נמחקה תמונה מ"${act?.name || ''}"`, beforeSnapshot: before });
+    emit();
+  },
+  setPhotoCaption(photoId: string, caption: string) {
+    const before = state.photos.find(p => p.id === photoId);
+    if (!before) return;
+    const after = { ...before, caption };
+    state = { ...state, photos: state.photos.map(p => p.id === photoId ? after : p) };
+    log({ action: 'photo_caption', summary: `עודכן כיתוב לתמונה`, beforeSnapshot: before, afterSnapshot: after });
+    emit();
+  },
+  // ---------- expenses ----------
+  addExpense(e: Omit<Expense, 'id' | 'ts' | 'currency'>) {
+    const act = state.activities.find(a => a.id === e.activityId);
+    const exp: Expense = { ...e, id: uid('exp'), ts: Date.now(), currency: '€' };
+    state = { ...state, expenses: [...state.expenses, exp] };
+    log({ action: 'exp_add', summary: `הוצאה €${exp.amountEUR} ב"${act?.name || ''}"`, afterSnapshot: exp });
+    emit();
+  },
+  deleteExpense(id: string) {
+    const before = state.expenses.find(e => e.id === id);
+    if (!before) return;
+    state = { ...state, expenses: state.expenses.filter(e => e.id !== id) };
+    log({ action: 'exp_del', summary: `נמחקה הוצאה €${before.amountEUR}`, beforeSnapshot: before });
+    emit();
+  },
+  addSettlement(fromId: string, toId: string, amountEUR: number) {
+    const s: Settlement = { id: uid('set'), ts: Date.now(), fromId, toId, amountEUR };
+    state = { ...state, settlements: [...state.settlements, s] };
+    const fp = state.participants.find(p => p.id === fromId)?.name || '';
+    const tp = state.participants.find(p => p.id === toId)?.name || '';
+    log({ action: 'settle', summary: `${fp} סילק €${amountEUR} ל${tp}`, afterSnapshot: s });
+    emit();
+  },
+  removeSettlement(id: string) {
+    const before = state.settlements.find(s => s.id === id);
+    if (!before) return;
+    state = { ...state, settlements: state.settlements.filter(s => s.id !== id) };
+    log({ action: 'settle_del', summary: `בוטל סילוק`, beforeSnapshot: before });
+    emit();
+  },
   undo(entryId: string) {
     const entry = state.changeLog.find(e => e.id === entryId);
     if (!entry || entry.undone) return;
@@ -327,6 +430,36 @@ export const store = {
           if (entry.afterSnapshot) {
             state = { ...state, activities: state.activities.filter(a => a.id !== entry.afterSnapshot.id) };
           }
+          break;
+        case 'msg_add': case 'msg_del':
+          if (entry.beforeSnapshot) {
+            const b = entry.beforeSnapshot as Activity;
+            state = { ...state, activities: state.activities.map(a => a.id === b.id ? b : a) };
+          }
+          break;
+        case 'photo_add':
+          if (entry.afterSnapshot) state = { ...state, photos: state.photos.filter(p => p.id !== entry.afterSnapshot.id) };
+          break;
+        case 'photo_del':
+          if (entry.beforeSnapshot) state = { ...state, photos: [...state.photos, entry.beforeSnapshot] };
+          break;
+        case 'photo_caption':
+          if (entry.beforeSnapshot) {
+            const b = entry.beforeSnapshot as TripPhoto;
+            state = { ...state, photos: state.photos.map(p => p.id === b.id ? b : p) };
+          }
+          break;
+        case 'exp_add':
+          if (entry.afterSnapshot) state = { ...state, expenses: state.expenses.filter(e => e.id !== entry.afterSnapshot.id) };
+          break;
+        case 'exp_del':
+          if (entry.beforeSnapshot) state = { ...state, expenses: [...state.expenses, entry.beforeSnapshot] };
+          break;
+        case 'settle':
+          if (entry.afterSnapshot) state = { ...state, settlements: state.settlements.filter(s => s.id !== entry.afterSnapshot.id) };
+          break;
+        case 'settle_del':
+          if (entry.beforeSnapshot) state = { ...state, settlements: [...state.settlements, entry.beforeSnapshot] };
           break;
         case 'update': case 'status': case 'move': case 'movepart': case 'assign': case 'note': case 'replace': case 'attend':
           if (entry.beforeSnapshot) {

@@ -41,6 +41,45 @@ export interface Activity {
   assignedTo?: string; // participant id
   notes?: string;
   attendees?: string[]; // participant ids; undefined means "all in"
+  messages?: ChatMessage[];
+}
+
+export interface ChatMessage {
+  id: string;
+  ts: number;
+  who: string; // participant id
+  text: string;
+  photoIds?: string[];
+}
+
+export interface TripPhoto {
+  id: string;
+  activityId: string;
+  dayDate: string;
+  who: string;
+  ts: number;
+  dataUrl: string;
+  caption?: string;
+}
+
+export interface Expense {
+  id: string;
+  activityId: string;
+  dayDate: string;
+  payerId: string;
+  amountEUR: number;
+  currency: '€';
+  splitWith: string[]; // participant ids
+  note?: string;
+  ts: number;
+}
+
+export interface Settlement {
+  id: string;
+  ts: number;
+  fromId: string;
+  toId: string;
+  amountEUR: number;
 }
 
 export interface Day {
@@ -131,5 +170,8 @@ export interface AppState {
   currentParticipantId: string;
   changeLog: ChangeLogEntry[];
   decisions: Decision[];
+  photos: TripPhoto[];
+  expenses: Expense[];
+  settlements: Settlement[];
   schemaVersion?: number;
 }

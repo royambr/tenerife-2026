@@ -74,6 +74,12 @@ export function ActivityCard({ a, onClick, compact=false, onReplace }:{
           ⋮
         </button>
       )}
+      {(a.messages?.length || 0) > 0 && (
+        <span className="absolute top-1.5 left-1.5 text-[10px] font-extrabold bg-sunset-500 text-white rounded-full px-1.5 py-0.5 pointer-events-none"
+              style={edit ? { top: '40px' } : undefined}>
+          💬 {a.messages!.length}
+        </span>
+      )}
     </div>
     {menu && (
       <ActivityQuickActions activity={a} open={menu} onClose={() => setMenu(false)} onReplace={onReplace} />

@@ -8,6 +8,9 @@ import { ActivityEditor } from './ActivityEditor';
 import { Gallery } from './Gallery';
 import { queryForActivity } from '../data/place_queries';
 import { ActivityAttendees } from './ActivityAttendees';
+import { ActivityPhotos } from './ActivityPhotos';
+import { ActivityExpenses } from './ActivityExpenses';
+import { ActivityChat } from './ActivityChat';
 
 const STATUSES: Status[] = ['מתוכנן','הוזמן','אופציונלי','דורש החלטה','בוצע','בוטל','בסיכון','דולג'];
 
@@ -52,6 +55,8 @@ export function ActivitySheet({ activity, open, onClose, onReplace }:{
         <ActivityAttendees activity={a} />
 
         {galleryQuery && <Gallery query={galleryQuery} />}
+
+        <ActivityPhotos activity={a} />
 
         {/* Chips */}
         <div className="flex flex-wrap gap-1.5">
@@ -171,6 +176,9 @@ export function ActivitySheet({ activity, open, onClose, onReplace }:{
             </button>
           </div>
         )}
+
+        <ActivityExpenses activity={a} />
+        <ActivityChat activity={a} />
       </div>
     </Sheet>
   );

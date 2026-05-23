@@ -5,6 +5,7 @@ import { Sheet } from '../components/Sheet';
 import type { ChecklistItem, Decision } from '../data/types';
 import { PROFILES } from '../data/profiles';
 import { tripCostForParticipant } from '../data/costs';
+import { SettlementCard } from '../components/SettlementCard';
 
 export function Manage() {
   const trip = useStore(s => s.trip);
@@ -78,6 +79,8 @@ export function Manage() {
         </div>
       </Card>
 
+      <SettlementCard />
+
       <CollapsibleCard title="✈️ טיסות" count={flights.length}>
         {flights.map(f => (
           <Row key={f.id} title={f.name} sub={`${f.dayDate} · ${f.startTime}`} tone="emerald" right={f.status} />
@@ -149,7 +152,7 @@ export function Manage() {
                   </div>
                   <div className="text-[10px] text-zinc-500">{timeAgo(e.ts)}</div>
                 </div>
-                {!e.undone && ['create','delete','duplicate','update','status','move','movepart','assign','note','replace','plan','check_create','check_delete','check_update','check_toggle','vote','decide','decision_new','attend'].includes(e.action) && (
+                {!e.undone && ['create','delete','duplicate','update','status','move','movepart','assign','note','replace','plan','check_create','check_delete','check_update','check_toggle','vote','decide','decision_new','attend','msg_add','msg_del','photo_add','photo_del','photo_caption','exp_add','exp_del','settle','settle_del'].includes(e.action) && (
                   <button onClick={() => store.undo(e.id)}
                           className="text-[11px] text-sunset-700 font-extrabold min-h-[28px] px-2 rounded-full bg-sunset-300/20 hover:bg-sunset-300/40">
                     בטל

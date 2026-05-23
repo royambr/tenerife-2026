@@ -372,7 +372,10 @@ export const SEED: AppState = {
   currentParticipantId: 'p_roy',
   changeLog: [],
   decisions,
-  schemaVersion: 4
+  photos: [],
+  expenses: [],
+  settlements: [],
+  schemaVersion: 5
 };
 
 export const PLAN_IDS = { BALANCED: P1, NATURE: P2, BEACH: P3 };
