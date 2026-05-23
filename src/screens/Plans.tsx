@@ -51,9 +51,31 @@ export function Plans() {
 
       {view === 'compare' && (
         <div className="space-y-4">
-          {/* Side-by-side icon meters */}
-          <div className="rounded-2xl bg-white border border-ocean-100 shadow-soft p-3 overflow-x-auto">
-            <table className="w-full text-center min-w-[400px]">
+          {/* Mobile: vertical layout — plans as rows, axes as columns */}
+          <div className="rounded-2xl bg-white border border-ocean-100 shadow-soft p-3 lg:hidden space-y-3">
+            {plans.map(p => (
+              <div key={p.id} className="rounded-xl border border-ocean-100 overflow-hidden">
+                <button onClick={() => store.setActivePlan(p.id)}
+                        className={`w-full text-right text-[13px] font-extrabold text-white px-3 py-2 bg-gradient-to-bl ${PLAN_GRADIENTS[p.id]}
+                          ${trip.activePlanId === p.id ? 'ring-2 ring-sunset-500 ring-inset' : ''}`}>
+                  {p.name}{trip.activePlanId === p.id && <span className="mr-1.5 text-[10px] bg-white/25 rounded-full px-2 py-0.5">✓ פעיל</span>}
+                </button>
+                <div className="grid grid-cols-5 gap-1 p-2">
+                  {AXES.map(ax => (
+                    <div key={ax.id} className="text-center" title={ax.label}>
+                      <div className="text-[10px] font-bold text-zinc-500">{ax.icon}</div>
+                      <IconMeter value={ax.get(p)} max={ax.max} icon={ax.icon} />
+                      <div className="text-[9px] text-zinc-500 mt-0.5">{ax.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop/tablet: original table */}
+          <div className="hidden lg:block rounded-2xl bg-white border border-ocean-100 shadow-soft p-3">
+            <table className="w-full text-center">
               <thead>
                 <tr>
                   <th className="text-[11px] text-zinc-500 font-bold py-2"></th>

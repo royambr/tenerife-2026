@@ -7,6 +7,7 @@ import { store, useEditMode } from '../store';
 import { ActivityEditor } from './ActivityEditor';
 import { Gallery } from './Gallery';
 import { queryForActivity } from '../data/place_queries';
+import { ActivityAttendees } from './ActivityAttendees';
 
 const STATUSES: Status[] = ['מתוכנן','הוזמן','אופציונלי','דורש החלטה','בוצע','בוטל','בסיכון','דולג'];
 
@@ -47,6 +48,8 @@ export function ActivitySheet({ activity, open, onClose, onReplace }:{
             <div className="text-[12px] text-zinc-500">{a.region} · {costLabel(a.costLevel)}</div>
           </div>
         </div>
+
+        <ActivityAttendees activity={a} />
 
         {galleryQuery && <Gallery query={galleryQuery} />}
 

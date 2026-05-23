@@ -210,6 +210,21 @@ export const store = {
     log({ action: 'assign', summary: `"${before.name}" הוקצתה ל${pname}`, beforeSnapshot: before, afterSnapshot: after });
     emit();
   },
+  toggleAttendee(activityId: string, participantId: string) {
+    const before = state.activities.find(a => a.id === activityId);
+    if (!before) return;
+    const all = state.participants.map(p => p.id);
+    const current = before.attendees ?? all;
+    const isIn = current.includes(participantId);
+    const next = isIn ? current.filter(x => x !== participantId) : [...current, participantId];
+    // normalize: if everyone in → store undefined
+    const attendees = next.length === all.length && all.every(x => next.includes(x)) ? undefined : next;
+    const after = { ...before, attendees };
+    state = { ...state, activities: state.activities.map(a => a.id === activityId ? after : a) };
+    const pname = state.participants.find(p => p.id === participantId)?.name || '';
+    log({ action: 'attend', summary: isIn ? `${pname} לא בא ל"${before.name}"` : `${pname} בא ל"${before.name}"`, beforeSnapshot: before, afterSnapshot: after });
+    emit();
+  },
   setActivityNote(id: string, notes: string) {
     const before = state.activities.find(a => a.id === id);
     if (!before) return;
@@ -313,7 +328,7 @@ export const store = {
             state = { ...state, activities: state.activities.filter(a => a.id !== entry.afterSnapshot.id) };
           }
           break;
-        case 'update': case 'status': case 'move': case 'movepart': case 'assign': case 'note': case 'replace':
+        case 'update': case 'status': case 'move': case 'movepart': case 'assign': case 'note': case 'replace': case 'attend':
           if (entry.beforeSnapshot) {
             const b = entry.beforeSnapshot as Activity;
             state = { ...state, activities: state.activities.map(a => a.id === b.id ? b : a) };

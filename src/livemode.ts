@@ -313,6 +313,24 @@ function minToHM(min: number): string {
   return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
 }
 
+// 0-100 day load score
+export function dayPaceScore(dayActs: Activity[]): number {
+  const nonLog = dayActs.filter(a => a.category !== 'מלון' && a.category !== 'נסיעה / לוגיסטיקה' && a.category !== 'טיסה');
+  const count = nonLog.length;
+  const totalMin = nonLog.reduce((s,a) => s + durationMin(a), 0);
+  const regions = new Set(nonLog.map(a => regionGroup(a.region)));
+  const lateNight = nonLog.some(a => a.dayPart === 'lateNight' || a.dayPart === 'night');
+  const prep = nonLog.reduce((s,a) => s + ((a.preparation?.length || 0) > 0 ? 1 : 0), 0);
+  // weighted score
+  let score = 0;
+  score += Math.min(40, count * 8);
+  score += Math.min(25, totalMin / 30); // 750min = max
+  score += Math.min(15, (regions.size - 1) * 8);
+  if (lateNight) score += 10;
+  score += Math.min(10, prep * 2);
+  return Math.round(Math.max(0, Math.min(100, score)));
+}
+
 export function dayPartHebrew(p: DayPart) {
   return ({ morning:'בוקר', noon:'צהריים', evening:'ערב', night:'לילה', lateNight:'לילה מאוחר' } as const)[p];
 }

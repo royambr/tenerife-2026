@@ -4,6 +4,7 @@ import { Chip } from '../components/Chip';
 import { Sheet } from '../components/Sheet';
 import type { ChecklistItem, Decision } from '../data/types';
 import { PROFILES } from '../data/profiles';
+import { tripCostForParticipant } from '../data/costs';
 
 export function Manage() {
   const trip = useStore(s => s.trip);
@@ -27,9 +28,12 @@ export function Manage() {
 
   return (
     <div className="p-4 pb-2 space-y-4 animate-fade-up lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-5 lg:space-y-0 lg:items-start">
-      <header className="lg:col-span-full">
-        <h1 className="text-[20px] font-extrabold text-ocean-700">ניהול הטיול</h1>
-        <div className="text-[12px] text-zinc-500 mt-0.5">{trip.travelersCount} חברים · {trip.startDate.slice(5)} – {trip.endDate.slice(5)}</div>
+      <header className="lg:col-span-full flex items-start justify-between gap-2">
+        <div>
+          <h1 className="text-[20px] font-extrabold text-ocean-700">ניהול הטיול</h1>
+          <div className="text-[12px] text-zinc-500 mt-0.5">{trip.travelersCount} חברים · {trip.startDate.slice(5)} – {trip.endDate.slice(5)}</div>
+        </div>
+        <Chip tone="emerald">💶 ~€{tripCostForParticipant(activities, currentId, participants.map(p => p.id))} לאיש לטיול</Chip>
       </header>
 
       {/* Participant switcher */}
@@ -145,7 +149,7 @@ export function Manage() {
                   </div>
                   <div className="text-[10px] text-zinc-500">{timeAgo(e.ts)}</div>
                 </div>
-                {!e.undone && ['create','delete','duplicate','update','status','move','movepart','assign','note','replace','plan','check_create','check_delete','check_update','check_toggle','vote','decide','decision_new'].includes(e.action) && (
+                {!e.undone && ['create','delete','duplicate','update','status','move','movepart','assign','note','replace','plan','check_create','check_delete','check_update','check_toggle','vote','decide','decision_new','attend'].includes(e.action) && (
                   <button onClick={() => store.undo(e.id)}
                           className="text-[11px] text-sunset-700 font-extrabold min-h-[28px] px-2 rounded-full bg-sunset-300/20 hover:bg-sunset-300/40">
                     בטל
@@ -194,11 +198,18 @@ export function Manage() {
   );
 }
 
+function voteCountLabel(n: number) {
+  if (n === 0) return 'אין קולות';
+  if (n === 1) return 'קול 1';
+  return `${n} קולות`;
+}
+
 function DecisionCard({ decision, myId }:{ decision: Decision; myId: string }) {
   const total = decision.options.reduce((s, o) => s + o.votes.length, 0);
   const leading = [...decision.options].sort((a,b) => b.votes.length - a.votes.length)[0];
   const closed = decision.status === 'הוחלט';
   const winnerId = decision.winnerId;
+  const [confirmOpt, setConfirmOpt] = useState<string | null>(null);
 
   return (
     <div className={`rounded-2xl border p-3 ${closed ? 'bg-emerald-50/50 border-emerald-100' : 'bg-white border-ocean-100 shadow-soft'}`}>
@@ -212,21 +223,36 @@ function DecisionCard({ decision, myId }:{ decision: Decision; myId: string }) {
           const isLeader = !closed && o.id === leading.id && o.votes.length > 0;
           const isWinner = closed && o.id === winnerId;
           const pct = total ? Math.round(100 * o.votes.length / total) : 0;
+          const isConfirm = confirmOpt === o.id;
           return (
-            <button key={o.id} onClick={() => !closed && store.voteDecision(decision.id, o.id)}
-                    disabled={closed}
-                    className={`w-full text-right rounded-xl p-2 relative overflow-hidden min-h-[44px] border
-                      ${isWinner ? 'bg-emerald-500 text-white border-emerald-500'
-                        : voted ? 'bg-ocean-700 text-white border-ocean-700'
-                        : 'bg-white border-ocean-100 text-ocean-700 hover:bg-ocean-50'}`}>
-              <div className={`absolute inset-y-0 right-0 ${voted || isWinner ? 'bg-white/15' : 'bg-ocean-50'}`} style={{ width: `${pct}%` }} />
-              <div className="relative flex items-center justify-between gap-2">
-                <span className="text-[13px] font-bold flex-1 truncate">
-                  {voted && '✓ '}{isLeader && !voted && '🏆 '}{o.label}
-                </span>
-                <span className="text-[11px] font-extrabold tabular-nums">{o.votes.length}</span>
-              </div>
-            </button>
+            <div key={o.id}>
+              <button onClick={() => { if (closed) return; if (voted) { store.voteDecision(decision.id, o.id); } else { setConfirmOpt(o.id); } }}
+                      disabled={closed}
+                      className={`w-full text-right rounded-xl p-2 relative overflow-hidden min-h-[44px] border transition
+                        ${isWinner ? 'bg-emerald-500 text-white border-emerald-500'
+                          : voted ? 'bg-ocean-700 text-white border-ocean-700'
+                          : 'bg-white border-ocean-100 text-ocean-700 hover:bg-ocean-50'}`}>
+                <div className={`absolute inset-y-0 right-0 transition-all duration-500 ${voted || isWinner ? 'bg-white/20' : 'bg-ocean-50'}`}
+                     style={{ width: `${pct}%` }} />
+                <div className="relative flex items-center justify-between gap-2">
+                  <span className="text-[13px] font-bold flex-1 truncate">
+                    {voted && '✓ הצבעתי · '}{isLeader && !voted && '🏆 '}{o.label}
+                  </span>
+                  <span className={`text-[10px] font-extrabold tabular-nums rounded-full px-2 py-0.5 ${voted || isWinner ? 'bg-white/25' : 'bg-ocean-50 text-ocean-700'}`}>
+                    {voteCountLabel(o.votes.length)}
+                  </span>
+                </div>
+              </button>
+              {isConfirm && !closed && (
+                <div className="mt-1 mb-1 rounded-xl bg-sunset-300/15 border border-sunset-300 p-2 flex items-center justify-between gap-2">
+                  <span className="text-[12px] text-sunset-700 font-semibold flex-1 truncate">הצבעת בעד "{o.label}"?</span>
+                  <button onClick={() => { store.voteDecision(decision.id, o.id); setConfirmOpt(null); }}
+                          className="text-[11px] font-extrabold rounded-full bg-ocean-700 text-white px-3 py-1.5 min-h-[32px]">אישור</button>
+                  <button onClick={() => setConfirmOpt(null)}
+                          className="text-[11px] font-extrabold rounded-full bg-white border border-ocean-100 text-ocean-700 px-3 py-1.5 min-h-[32px]">ביטול</button>
+                </div>
+              )}
+            </div>
           );
         })}
       </div>

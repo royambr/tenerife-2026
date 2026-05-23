@@ -40,6 +40,7 @@ export interface Activity {
   alternatives?: string[];
   assignedTo?: string; // participant id
   notes?: string;
+  attendees?: string[]; // participant ids; undefined means "all in"
 }
 
 export interface Day {
