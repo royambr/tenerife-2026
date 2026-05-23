@@ -1,12 +1,11 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
 interface ImgSrc { thumb: string; full: string; }
 
-const CACHE_PREFIX = 'tnf_gallery_v1:';
+const CACHE_PREFIX = 'tnf_gallery_v2:';
 const TTL_MS = 7 * 24 * 60 * 60 * 1000; // 1 week
 const TARGET_COUNT = 10;
-const WIKI_MIN = 4;
 
 interface CacheEntry { ts: number; images: ImgSrc[]; }
 
@@ -28,9 +27,23 @@ function writeCache(query: string, images: ImgSrc[]) {
   } catch {}
 }
 
+// Instant CDN-redirect URLs (no API roundtrip)
+export function instantImages(query: string, count = TARGET_COUNT): ImgSrc[] {
+  const q = encodeURIComponent(query);
+  const arr: ImgSrc[] = [];
+  for (let i = 0; i < count; i++) {
+    const sig = i + 1;
+    arr.push({
+      thumb: `https://source.unsplash.com/400x400/?${q}&sig=${sig}`,
+      full:  `https://source.unsplash.com/1200x800/?${q}&sig=${sig}`,
+    });
+  }
+  return arr;
+}
+
 async function fetchWikimedia(query: string): Promise<ImgSrc[]> {
   try {
-    const searchUrl = `https://commons.wikimedia.org/w/api.php?action=query&format=json&generator=search&gsrnamespace=6&gsrsearch=${encodeURIComponent(query)}&gsrlimit=14&prop=imageinfo&iiprop=url&iiurlwidth=800&origin=*`;
+    const searchUrl = `https://commons.wikimedia.org/w/api.php?action=query&format=json&generator=search&gsrnamespace=6&gsrsearch=${encodeURIComponent(query)}&gsrlimit=14&prop=imageinfo&iiprop=url&iiurlwidth=400&origin=*`;
     const res = await fetch(searchUrl);
     if (!res.ok) return [];
     const data = await res.json();
@@ -44,7 +57,6 @@ async function fetchWikimedia(query: string): Promise<ImgSrc[]> {
       const thumb = info.thumburl || info.url;
       const full = info.url || info.thumburl;
       if (!thumb || !full) continue;
-      // skip svg/pdf/etc
       if (/\.(svg|pdf|webm|ogv|gif)$/i.test(full)) continue;
       out.push({ thumb, full });
     }
@@ -52,80 +64,74 @@ async function fetchWikimedia(query: string): Promise<ImgSrc[]> {
   } catch { return []; }
 }
 
-function unsplashFill(query: string, count: number, startIdx: number): ImgSrc[] {
-  const q = encodeURIComponent(query);
-  const arr: ImgSrc[] = [];
-  for (let i = 0; i < count; i++) {
-    const sig = startIdx + i + 1;
-    const url = `https://source.unsplash.com/featured/800x600/?${q}&sig=${sig}`;
-    arr.push({ thumb: url, full: url });
-  }
-  return arr;
-}
-
 export function Gallery({ query }: { query: string }) {
-  const [images, setImages] = useState<ImgSrc[] | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Synchronous initial state — render immediately on first paint.
+  const initial = useMemo<ImgSrc[]>(() => {
+    const cached = readCache(query);
+    return cached && cached.length ? cached : instantImages(query);
+  }, [query]);
+  const hadCacheRef = useRef<boolean>(!!readCache(query));
+
+  const [images, setImages] = useState<ImgSrc[]>(initial);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
+    // re-init when query changes
     const cached = readCache(query);
-    if (cached) {
+    if (cached && cached.length) {
       setImages(cached);
-      setLoading(false);
-      return;
+      hadCacheRef.current = true;
+    } else {
+      setImages(instantImages(query));
+      hadCacheRef.current = false;
     }
-    setLoading(true);
-    setImages(null);
+  }, [query]);
+
+  useEffect(() => {
+    if (hadCacheRef.current) return; // already have a good cached set
+    let cancelled = false;
     (async () => {
       const wiki = await fetchWikimedia(query);
-      if (cancelled) return;
-      let combined = wiki.slice(0, TARGET_COUNT);
-      if (combined.length < WIKI_MIN) {
-        const fill = unsplashFill(query, TARGET_COUNT - combined.length, combined.length);
-        combined = combined.concat(fill);
-      } else if (combined.length < TARGET_COUNT) {
-        const fill = unsplashFill(query, TARGET_COUNT - combined.length, combined.length);
-        combined = combined.concat(fill);
+      if (cancelled || wiki.length === 0) return;
+      // Merge: prefer wiki thumbs, top up to TARGET_COUNT with current instant fallback.
+      const fallback = instantImages(query);
+      const combined: ImgSrc[] = [...wiki];
+      while (combined.length < TARGET_COUNT && combined.length < fallback.length + wiki.length) {
+        combined.push(fallback[combined.length - wiki.length] ?? fallback[combined.length % fallback.length]);
       }
-      if (combined.length === 0) {
-        // pure unsplash fallback
-        combined = unsplashFill(query, TARGET_COUNT, 0);
-      }
-      writeCache(query, combined);
-      if (!cancelled) {
-        setImages(combined);
-        setLoading(false);
-      }
+      const sliced = combined.slice(0, TARGET_COUNT);
+      writeCache(query, sliced);
+      if (!cancelled) setImages(sliced);
     })();
     return () => { cancelled = true; };
   }, [query]);
-
-  if (loading || !images) {
-    return (
-      <div className="-mx-5 px-5 overflow-x-auto no-scrollbar" aria-label="טוען תמונות">
-        <div className="flex gap-2">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="w-24 h-24 rounded-xl bg-ocean-100/60 animate-pulse flex-shrink-0" />
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <>
       <div className="-mx-5 px-5 overflow-x-auto no-scrollbar" dir="rtl">
         <div className="flex gap-2">
           {images.map((img, i) => (
-            <button key={i} onClick={() => setLightboxIdx(i)}
+            <button key={`${i}-${img.thumb}`} onClick={() => setLightboxIdx(i)}
                     aria-label={`תמונה ${i + 1} מתוך ${images.length}`}
-                    className="w-24 h-24 rounded-xl overflow-hidden bg-ocean-50 flex-shrink-0 border border-ocean-100/60">
+                    className="w-24 h-24 rounded-xl overflow-hidden bg-ocean-50 flex-shrink-0 border border-ocean-100/60 relative">
+              {/* shimmer placeholder behind image (image overlays it) */}
+              <div className="absolute inset-0 bg-ocean-100/60 animate-pulse" aria-hidden="true" />
               <img src={img.thumb} alt=""
-                   loading="lazy"
-                   onError={(e) => { (e.currentTarget as HTMLImageElement).style.display='none'; (e.currentTarget.parentElement as HTMLElement).innerText = '🏝️'; }}
-                   className="w-full h-full object-cover" />
+                   loading={i < 3 ? 'eager' : 'lazy'}
+                   // @ts-ignore — fetchpriority is valid HTML, not yet typed in React
+                   fetchpriority={i < 3 ? 'high' : 'auto'}
+                   decoding="async"
+                   onLoad={(e) => {
+                     const ph = (e.currentTarget.previousSibling as HTMLElement | null);
+                     if (ph) ph.style.display = 'none';
+                   }}
+                   onError={(e) => {
+                     const el = e.currentTarget as HTMLImageElement;
+                     el.style.display = 'none';
+                     const parent = el.parentElement;
+                     if (parent) parent.innerText = '🏝️';
+                   }}
+                   className="relative w-full h-full object-cover" />
             </button>
           ))}
         </div>
@@ -146,14 +152,13 @@ function Lightbox({ images, idx, onClose, onIdx }:{
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
-      else if (e.key === 'ArrowLeft') next();  // RTL: left arrow goes forward visually
+      else if (e.key === 'ArrowLeft') next();
       else if (e.key === 'ArrowRight') prev();
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose, next, prev]);
 
-  // simple touch swipe
   const [touchStart, setTouchStart] = useState<number | null>(null);
   function onTouchStart(e: React.TouchEvent) { setTouchStart(e.touches[0].clientX); }
   function onTouchEnd(e: React.TouchEvent) {
@@ -177,6 +182,9 @@ function Lightbox({ images, idx, onClose, onIdx }:{
       </div>
       <div className="flex-1 flex items-center justify-center relative overflow-hidden" onClick={(e) => e.stopPropagation()}>
         <img src={images[idx].full} alt=""
+             decoding="async"
+             // @ts-ignore
+             fetchpriority="high"
              onError={(e) => { (e.currentTarget as HTMLImageElement).src = images[idx].thumb; }}
              className="max-w-full max-h-full object-contain" />
         <button onClick={(e) => { e.stopPropagation(); prev(); }} aria-label="הקודם"

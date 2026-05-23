@@ -1,6 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useStore, store } from '../store';
 import { activitiesFor, clampToTrip, fmtDateShort, iso, minutesFromHM, CATEGORY_ICONS, costLabel, INTENSITY_COLORS, buildMapsUrl, sortActivities } from '../utils';
+import { queryForActivity } from '../data/place_queries';
+import { instantImages } from '../components/Gallery';
 import { ActivityCard } from '../components/ActivityCard';
 import { ActivitySheet } from '../components/ActivitySheet';
 import { TripProgress } from '../components/TripProgress';
@@ -46,6 +48,23 @@ export function Today() {
   const toBook = activitiesFor(plan.id, activities).filter(a => a.bookingRequired && a.status !== 'הוזמן').slice(0, 6);
 
   const later = remaining.filter(a => a.id !== next?.id);
+
+  // Prefetch the first gallery image of each remaining activity so the user's
+  // first tap on a card opens with image already in browser cache.
+  useEffect(() => {
+    const prefetched: string[] = [];
+    for (const a of remaining.slice(0, 8)) {
+      const q = queryForActivity(a);
+      if (!q) continue;
+      const url = instantImages(q, 1)[0]?.thumb;
+      if (!url) continue;
+      const img = new Image();
+      img.src = url;
+      prefetched.push(url);
+    }
+    return () => { /* GC handles Image() */ };
+    // re-run when active date changes
+  }, [activeDate, plan.id]);
 
   return (
     <div className="p-4 pb-2 space-y-3.5 animate-fade-up lg:max-w-3xl">

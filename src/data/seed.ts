@@ -143,10 +143,10 @@ activities.push(
     preparation: ['מים', 'נעליים נוחות', 'לעקוב על שעות חזרה — טיסה מוקדמת']
   }),
 
-  // June 24 — Flight home
-  A(P1, DATES[7], 'morning', '06:30', '07:30', 'יציאה ו-Check-out', 'מלון', 'דרום', { costLevel: 1, priority: 'גבוה' }),
-  A(P1, DATES[7], 'morning', '07:30', '09:30', 'נסיעה לשדה והחזרת רכב', 'נסיעה / לוגיסטיקה', 'דרום', { costLevel: 1 }),
-  A(P1, DATES[7], 'morning', '11:00', '11:30', 'טיסה הביתה', 'טיסה', 'מחוץ לטנריף', { costLevel: 3, status: 'הוזמן' }),
+  // June 24 — Flight home (Tenerife North TFN — ~1h15 drive from Costa Adeje)
+  A(P1, DATES[7], 'morning', '06:00', '07:00', 'יציאה ו-Check-out', 'מלון', 'דרום', { costLevel: 1, priority: 'גבוה' }),
+  A(P1, DATES[7], 'morning', '07:00', '08:30', 'נסיעה ל-Tenerife North Airport (TFN) + החזרת רכב', 'נסיעה / לוגיסטיקה', 'צפון-מזרח', { costLevel: 1, priority: 'גבוה', description: 'נסיעה מקוסטה אדחה לשדה הצפוני (TFN) — כ-1:15 שעות. החזרת רכב עם מיכל מלא.' }),
+  A(P1, DATES[7], 'morning', '11:00', '11:30', 'טיסה הביתה · Tenerife North Airport (TFN)', 'טיסה', 'מחוץ לטנריף', { costLevel: 3, status: 'הוזמן' }),
 );
 
 // ============ PLAN 2: טבע ואקשן ============
@@ -207,9 +207,9 @@ activities.push(
     costLevel: 1, preparation: ['נעלי שטח', 'מים', 'לעקוב על שעות חזרה — טיסה מוקדמת']
   }),
 
-  A(P2, DATES[7], 'morning', '06:30', '07:30', 'יציאה ו-Check-out', 'מלון', 'דרום', { costLevel: 1, priority: 'גבוה' }),
-  A(P2, DATES[7], 'morning', '07:30', '09:30', 'נסיעה לשדה והחזרת רכב', 'נסיעה / לוגיסטיקה', 'דרום', { costLevel: 1 }),
-  A(P2, DATES[7], 'morning', '11:00', '11:30', 'טיסה הביתה', 'טיסה', 'מחוץ לטנריף', { costLevel: 3, status: 'הוזמן' }),
+  A(P2, DATES[7], 'morning', '06:00', '07:00', 'יציאה ו-Check-out', 'מלון', 'דרום', { costLevel: 1, priority: 'גבוה' }),
+  A(P2, DATES[7], 'morning', '07:00', '08:30', 'נסיעה ל-Tenerife North Airport (TFN) + החזרת רכב', 'נסיעה / לוגיסטיקה', 'צפון-מזרח', { costLevel: 1, priority: 'גבוה', description: 'נסיעה מקוסטה אדחה לשדה הצפוני (TFN) — כ-1:15 שעות. החזרת רכב עם מיכל מלא.' }),
+  A(P2, DATES[7], 'morning', '11:00', '11:30', 'טיסה הביתה · Tenerife North Airport (TFN)', 'טיסה', 'מחוץ לטנריף', { costLevel: 3, status: 'הוזמן' }),
 );
 
 // ============ PLAN 3: חופים וחיי לילה ============
@@ -255,9 +255,9 @@ activities.push(
     costLevel: 1, preparation: ['מים', 'נעליים נוחות', 'שעון חזרה — טיסה מוקדמת']
   }),
 
-  A(P3, DATES[7], 'morning', '06:30', '07:30', 'יציאה ו-Check-out', 'מלון', 'דרום', { costLevel: 1, priority: 'גבוה' }),
-  A(P3, DATES[7], 'morning', '07:30', '09:30', 'נסיעה לשדה והחזרת רכב', 'נסיעה / לוגיסטיקה', 'דרום', { costLevel: 1 }),
-  A(P3, DATES[7], 'morning', '11:00', '11:30', 'טיסה הביתה', 'טיסה', 'מחוץ לטנריף', { costLevel: 3, status: 'הוזמן' }),
+  A(P3, DATES[7], 'morning', '06:00', '07:00', 'יציאה ו-Check-out', 'מלון', 'דרום', { costLevel: 1, priority: 'גבוה' }),
+  A(P3, DATES[7], 'morning', '07:00', '08:30', 'נסיעה ל-Tenerife North Airport (TFN) + החזרת רכב', 'נסיעה / לוגיסטיקה', 'צפון-מזרח', { costLevel: 1, priority: 'גבוה', description: 'נסיעה מקוסטה אדחה לשדה הצפוני (TFN) — כ-1:15 שעות. החזרת רכב עם מיכל מלא.' }),
+  A(P3, DATES[7], 'morning', '11:00', '11:30', 'טיסה הביתה · Tenerife North Airport (TFN)', 'טיסה', 'מחוץ לטנריף', { costLevel: 3, status: 'הוזמן' }),
 );
 
 const HOTEL_NORTH = 'Hotel Las Aguilas · Puerto de la Cruz';
@@ -272,8 +272,8 @@ function makePlanDays(): Day[] {
     mkDay('', dayMeta(DATES[3], 'יום Teide', HOTEL_SOUTH, 'עמוס',   ['שכבת חימום לערב','בנזין מלא ברכב','להזמין רכבל מראש'])),
     mkDay('', dayMeta(DATES[4], 'יום פעילות', HOTEL_SOUTH, 'בינוני',['קרם הגנה','בגדי ים זמינים'])),
     mkDay('', dayMeta(DATES[5], 'מערב האי', HOTEL_SOUTH, 'בינוני',  ['לסגור שייט מראש'])),
-    mkDay('', dayMeta(DATES[6], 'יום אחרון + San Juan', HOTEL_SOUTH, 'עמוס', ['לארוז לפני היציאה בערב','שעת חזרה מבוקרת — טיסה מוקדמת'])),
-    mkDay('', dayMeta(DATES[7], 'טיסה הביתה', AT_FLIGHT, 'בינוני',   ['Check-out מוקדם','להחזיר את הרכב עם מיכל מלא'])),
+    mkDay('', dayMeta(DATES[6], 'יום אחרון + San Juan', HOTEL_SOUTH, 'עמוס', ['לארוז לפני היציאה בערב','שעת חזרה מבוקרת — מחר טיסה מ-Tenerife North (TFN), יציאה ב-07:00'])),
+    mkDay('', dayMeta(DATES[7], 'טיסה הביתה', AT_FLIGHT, 'בינוני',   ['Check-out מוקדם (06:00)','נסיעה ל-Tenerife North (TFN) — כ-1:15 שעות מקוסטה אדחה','להחזיר את הרכב עם מיכל מלא'])),
   ];
 }
 
@@ -372,7 +372,7 @@ export const SEED: AppState = {
   currentParticipantId: 'p_roy',
   changeLog: [],
   decisions,
-  schemaVersion: 3
+  schemaVersion: 4
 };
 
 export const PLAN_IDS = { BALANCED: P1, NATURE: P2, BEACH: P3 };

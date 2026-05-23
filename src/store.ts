@@ -39,8 +39,22 @@ function migrate(s: any): AppState {
   const currentParticipantId = validIds.has(s.currentParticipantId)
     ? s.currentParticipantId
     : 'p_roy';
+  // v4: re-seed activities/plans (June 24 = Tenerife North TFN, not generic south airport).
+  // Preserve user-mutated status/notes by id where possible.
+  const needsReseed = !s.schemaVersion || s.schemaVersion < 4;
+  let activitiesSource = s.activities || SEED.activities;
+  if (needsReseed) {
+    const prevById = new Map<string, any>((s.activities || []).map((a: any) => [a.id, a]));
+    activitiesSource = SEED.activities.map((a: any) => {
+      const prev = prevById.get(a.id);
+      if (!prev) return a;
+      // keep user-facing edits, but adopt new seed time/name/region/description fields
+      return { ...a, status: prev.status || a.status, assignedTo: prev.assignedTo, notes: prev.notes };
+    });
+  }
+  const plans = needsReseed ? SEED.plans : (s.plans || SEED.plans);
   // strip stale assignedTo
-  const activities = (s.activities || SEED.activities).map((a: any) =>
+  const activities = activitiesSource.map((a: any) =>
     a && a.assignedTo && !validIds.has(a.assignedTo) ? { ...a, assignedTo: undefined } : a
   );
   // clean votes referencing stale participants
@@ -54,12 +68,13 @@ function migrate(s: any): AppState {
   return {
     ...SEED,
     ...s,
+    plans,
     participants,
     currentParticipantId,
     activities,
     changeLog: s.changeLog || [],
     decisions,
-    schemaVersion: 3,
+    schemaVersion: 4,
   };
 }
 
