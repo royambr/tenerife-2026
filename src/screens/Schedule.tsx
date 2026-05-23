@@ -6,6 +6,7 @@ import { ActivitySheet } from '../components/ActivitySheet';
 import type { Activity, DayPart } from '../data/types';
 import { Sheet } from '../components/Sheet';
 import { ActivityEditor } from '../components/ActivityEditor';
+import { AlternativesSheet } from '../components/AlternativesSheet';
 
 const SECTIONS: { part: DayPart; label: string }[] = [
   { part: 'morning', label: 'בוקר' },
@@ -21,6 +22,7 @@ export function Schedule() {
   const edit = useEditMode();
   const [sel, setSel] = useState<Activity | null>(null);
   const [addFor, setAddFor] = useState<string | null>(null);
+  const [altFor, setAltFor] = useState<Activity | null>(null);
 
   const dates = plan.days.map(d => d.date);
 
@@ -61,7 +63,7 @@ export function Schedule() {
                 <div key={sec.part}>
                   <div className="text-[11px] font-bold text-zinc-500 mb-1.5 mt-2">{sec.label}</div>
                   <div className="space-y-2">
-                    {items.map(a => <ActivityCard key={a.id} a={a} onClick={() => setSel(a)} />)}
+                    {items.map(a => <ActivityCard key={a.id} a={a} onClick={() => setSel(a)} onReplace={(x) => setAltFor(x)} />)}
                     {edit && (
                       <button onClick={() => setAddFor(date + '|' + sec.part)}
                               className="w-full rounded-2xl border-2 border-dashed border-ocean-200 text-ocean-700 py-3 text-sm font-bold hover:bg-ocean-50">
@@ -77,7 +79,8 @@ export function Schedule() {
       })}
       </div>
 
-      <ActivitySheet activity={sel} open={!!sel} onClose={() => setSel(null)} />
+      <ActivitySheet activity={sel} open={!!sel} onClose={() => setSel(null)} onReplace={(a) => { setSel(null); setAltFor(a); }} />
+      <AlternativesSheet target={altFor} open={!!altFor} onClose={() => setAltFor(null)} />
 
       {addFor && (() => {
         const [d, p] = addFor.split('|') as [string, DayPart];

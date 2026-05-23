@@ -56,7 +56,9 @@ export const STATUS_COLORS: Record<Status,{bg:string;fg:string;dot:string}> = {
   'אופציונלי':  { bg:'bg-sand-100',   fg:'text-sand-500',   dot:'bg-sand-500' },
   'דורש החלטה': { bg:'bg-sunset-300/30',fg:'text-sunset-700',dot:'bg-sunset-500' },
   'בוצע':        { bg:'bg-zinc-100',   fg:'text-zinc-600',   dot:'bg-zinc-400' },
-  'בוטל':        { bg:'bg-red-50',     fg:'text-red-600',    dot:'bg-red-400' }
+  'בוטל':        { bg:'bg-red-50',     fg:'text-red-600',    dot:'bg-red-400' },
+  'בסיכון':      { bg:'bg-red-50',     fg:'text-red-700',    dot:'bg-red-500' },
+  'דולג':        { bg:'bg-zinc-100',   fg:'text-zinc-500',   dot:'bg-zinc-300' }
 };
 
 export const INTENSITY_COLORS: Record<string,string> = {

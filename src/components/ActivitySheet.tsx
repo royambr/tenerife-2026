@@ -6,10 +6,10 @@ import { CATEGORY_ICONS, STATUS_COLORS, buildMapsUrl, buildWazeUrl, costLabel } 
 import { store, useEditMode } from '../store';
 import { ActivityEditor } from './ActivityEditor';
 
-const STATUSES: Status[] = ['מתוכנן','הוזמן','אופציונלי','דורש החלטה','בוצע','בוטל'];
+const STATUSES: Status[] = ['מתוכנן','הוזמן','אופציונלי','דורש החלטה','בוצע','בוטל','בסיכון','דולג'];
 
-export function ActivitySheet({ activity, open, onClose }:{
-  activity: Activity | null; open: boolean; onClose: () => void;
+export function ActivitySheet({ activity, open, onClose, onReplace }:{
+  activity: Activity | null; open: boolean; onClose: () => void; onReplace?: (a: Activity) => void;
 }) {
   const edit = useEditMode();
   const [editing, setEditing] = useState(false);
@@ -139,6 +139,12 @@ export function ActivitySheet({ activity, open, onClose }:{
                   className="rounded-2xl bg-white border border-ocean-100 text-ocean-700 py-3 text-sm font-bold">
             ✎ ערוך פעילות
           </button>
+          {onReplace && (
+            <button onClick={() => { onReplace(a); onClose(); }}
+                    className="rounded-2xl bg-sunset-500 text-white py-3 text-sm font-bold col-span-2">
+              🔄 החלף פעילות
+            </button>
+          )}
         </div>
 
         {edit && (

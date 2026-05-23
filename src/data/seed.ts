@@ -1,4 +1,4 @@
-import type { Activity, AppState, Day, Plan } from './types';
+import type { Activity, AppState, Day, Decision, Participant, Plan } from './types';
 
 const uid = (() => { let i = 0; return (p='a') => `${p}_${++i}`; })();
 
@@ -282,7 +282,7 @@ const plans: Plan[] = [
     id: P1, name: 'מאוזנת',
     description: 'תמהיל של טבע, חופים, פארק מים, שייט, Teide ועיירות.',
     vibe: 'זרימה נינוחה עם רגעי שיא',
-    costLevel: 2, effortLevel: 3, nightlifeLevel: 2, natureLevel: 4,
+    costLevel: 2, effortLevel: 3, nightlifeLevel: 2, natureLevel: 4, beachLevel: 3,
     bestFor: 'קבוצה שרוצה לחוות הכל בלי לקרוס',
     highlights: ['Teide בשקיעה', 'Siam Park', 'שייט Los Gigantes', 'La Orotava'],
     days: makePlanDays()
@@ -291,7 +291,7 @@ const plans: Plan[] = [
     id: P2, name: 'טבע ואקשן',
     description: 'הליכות, תצפיות, ספורט ימי. אינטנסיבי ומתגמל.',
     vibe: 'אדרנלין ונופים בלי פשרות',
-    costLevel: 2, effortLevel: 5, nightlifeLevel: 1, natureLevel: 5,
+    costLevel: 2, effortLevel: 5, nightlifeLevel: 1, natureLevel: 5, beachLevel: 2,
     bestFor: 'מי שאוהב להתעורר מוקדם וללכת הרבה',
     highlights: ['Anaga', 'Masca', 'Teide hiking', 'קיאקים Los Gigantes'],
     days: makePlanDays()
@@ -300,7 +300,7 @@ const plans: Plan[] = [
     id: P3, name: 'חופים וחיי לילה',
     description: 'חוף ביום, מסיבות בלילה. נינוח ואקטיבי בערבים.',
     vibe: 'אנרגיה ים-תיכונית עם לילות גדולים',
-    costLevel: 3, effortLevel: 2, nightlifeLevel: 5, natureLevel: 2,
+    costLevel: 3, effortLevel: 2, nightlifeLevel: 5, natureLevel: 2, beachLevel: 5,
     bestFor: 'חבר׳ה שבאים לחגוג',
     highlights: ['Siam Park', 'Boat Party', 'Veronicas Strip', 'Noche de San Juan'],
     days: makePlanDays()
@@ -318,6 +318,44 @@ const checklist = [
   { id: uid('chk'), title: 'להחליט: Anaga או Masca ביום 19', owner: 'הקבוצה', dueDate: '2026-06-13', status: 'פתוח'  as const, priority: 'רגיל'  as const, category: 'החלטה'   as const },
 ];
 
+const participants: Participant[] = [
+  { id: 'p_roy',  name: 'רועי',  emoji: '🧭' },
+  { id: 'p_dana', name: 'דנה',   emoji: '🌊' },
+  { id: 'p_yoav', name: 'יואב',  emoji: '🏄' },
+  { id: 'p_maya', name: 'מאיה',  emoji: '🌅' },
+  { id: 'p_itay', name: 'איתי',  emoji: '🍻' },
+  { id: 'p_noa',  name: 'נועה',  emoji: '🌿' },
+  { id: 'p_tal',  name: 'טל',    emoji: '⚡' },
+];
+
+const decisions: Decision[] = [
+  {
+    id: 'dec_morning_19',
+    title: 'מה עושים מחר בבוקר?',
+    options: [
+      { id: 'o1', label: 'Siam Park', votes: ['p_yoav','p_itay'] },
+      { id: 'o2', label: 'חוף רגוע · Playa del Duque', votes: ['p_dana'] },
+      { id: 'o3', label: 'שייט · Los Gigantes', votes: ['p_maya','p_noa'] },
+      { id: 'o4', label: 'Teide בשקיעה', votes: ['p_roy'] }
+    ],
+    status: 'פתוח',
+    createdBy: 'p_roy',
+    createdAt: Date.now() - 1000*60*60*5
+  },
+  {
+    id: 'dec_dinner_first',
+    title: 'איפה אוכלים בערב הראשון?',
+    options: [
+      { id: 'o1', label: 'טפאס מקומי · Puerto de la Cruz', votes: ['p_roy','p_dana','p_noa'] },
+      { id: 'o2', label: 'דגים על הנמל', votes: ['p_yoav','p_maya'] },
+      { id: 'o3', label: 'מסעדה איטלקית קרובה', votes: ['p_itay'] }
+    ],
+    status: 'פתוח',
+    createdBy: 'p_dana',
+    createdAt: Date.now() - 1000*60*60*22
+  }
+];
+
 export const SEED: AppState = {
   trip: {
     id: 'trip_tnf_2026',
@@ -329,7 +367,12 @@ export const SEED: AppState = {
   },
   plans,
   activities,
-  checklist
+  checklist,
+  participants,
+  currentParticipantId: 'p_roy',
+  changeLog: [],
+  decisions,
+  schemaVersion: 2
 };
 
 export const PLAN_IDS = { BALANCED: P1, NATURE: P2, BEACH: P3 };

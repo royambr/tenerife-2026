@@ -1,4 +1,4 @@
-export type Status = 'מתוכנן' | 'הוזמן' | 'אופציונלי' | 'דורש החלטה' | 'בוצע' | 'בוטל';
+export type Status = 'מתוכנן' | 'הוזמן' | 'אופציונלי' | 'דורש החלטה' | 'בוצע' | 'בוטל' | 'בסיכון' | 'דולג';
 export type Category =
   | 'טבע' | 'חוף' | 'פארק מים' | 'שייט' | 'ספורט ימי'
   | 'עיר / עיירה' | 'מסעדה' | 'בר' | 'מועדון / מסיבה'
@@ -38,6 +38,8 @@ export interface Activity {
   sourceUrl?: string;
   groupNotes?: string;
   alternatives?: string[];
+  assignedTo?: string; // participant id
+  notes?: string;
 }
 
 export interface Day {
@@ -59,6 +61,7 @@ export interface Plan {
   effortLevel: 1|2|3|4|5;
   nightlifeLevel: 1|2|3|4|5;
   natureLevel: 1|2|3|4|5;
+  beachLevel?: 1|2|3|4|5;
   bestFor: string;
   highlights: string[];
   days: Day[];
@@ -84,9 +87,48 @@ export interface ChecklistItem {
   category: 'הזמנה' | 'אריזה' | 'החלטה' | 'מסמכים' | 'אחר';
 }
 
+export interface Participant {
+  id: string;
+  name: string;
+  emoji?: string;
+}
+
+export interface ChangeLogEntry {
+  id: string;
+  ts: number;
+  who: string; // participant id
+  action: string; // short code like 'status' / 'replace' / 'move' / 'delete' / ...
+  summary: string; // human-readable Hebrew summary
+  beforeSnapshot?: any;
+  afterSnapshot?: any;
+  undone?: boolean;
+  scope?: 'activity' | 'checklist' | 'decision' | 'plan' | 'other';
+}
+
+export interface DecisionOption {
+  id: string;
+  label: string;
+  votes: string[]; // participant ids
+}
+export interface Decision {
+  id: string;
+  title: string;
+  options: DecisionOption[];
+  status: 'פתוח' | 'הוחלט';
+  winnerId?: string;
+  createdBy: string;
+  createdAt: number;
+  relatedActivityId?: string;
+}
+
 export interface AppState {
   trip: Trip;
   plans: Plan[];
   activities: Activity[];
   checklist: ChecklistItem[];
+  participants: Participant[];
+  currentParticipantId: string;
+  changeLog: ChangeLogEntry[];
+  decisions: Decision[];
+  schemaVersion?: number;
 }
