@@ -1,4 +1,4 @@
-# Tenerife 2026 · החבר׳ה
+# Tenerife 2026 · הפרלמנט בטנריף
 
 Premium mobile-first Hebrew RTL trip OS for the June 17–24, 2026 Tenerife trip.
 

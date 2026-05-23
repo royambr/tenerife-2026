@@ -301,7 +301,7 @@ const plans: Plan[] = [
     description: 'חוף ביום, מסיבות בלילה. נינוח ואקטיבי בערבים.',
     vibe: 'אנרגיה ים-תיכונית עם לילות גדולים',
     costLevel: 3, effortLevel: 2, nightlifeLevel: 5, natureLevel: 2, beachLevel: 5,
-    bestFor: 'חבר׳ה שבאים לחגוג',
+    bestFor: 'פרלמנט שבא לחגוג',
     highlights: ['Siam Park', 'Boat Party', 'Veronicas Strip', 'Noche de San Juan'],
     days: makePlanDays()
   }
@@ -314,7 +314,7 @@ const checklist = [
   { id: uid('chk'), title: 'הזמנת שייט Los Gigantes',     owner: 'אסף',    dueDate: '2026-06-14', status: 'פתוח'  as const, priority: 'גבוה'  as const, category: 'הזמנה'   as const },
   { id: uid('chk'), title: 'נעלי הליכה לכולם',           owner: 'כל אחד', dueDate: '2026-06-16', status: 'פתוח'  as const, priority: 'רגיל'  as const, category: 'אריזה'   as const },
   { id: uid('chk'), title: 'אדפטור לשקעים אירופיים',     owner: 'מתן',    dueDate: '2026-06-16', status: 'פתוח'  as const, priority: 'רגיל'  as const, category: 'אריזה'   as const },
-  { id: uid('chk'), title: 'ביטוח נסיעות לכל החבר׳ה',    owner: 'גנצי',   dueDate: '2026-06-08', status: 'בתהליך'as const, priority: 'גבוה'  as const, category: 'מסמכים' as const },
+  { id: uid('chk'), title: 'ביטוח נסיעות לכל הפרלמנט',    owner: 'גנצי',   dueDate: '2026-06-08', status: 'בתהליך'as const, priority: 'גבוה'  as const, category: 'מסמכים' as const },
   { id: uid('chk'), title: 'להחליט: Anaga או Masca ביום 19', owner: 'הקבוצה', dueDate: '2026-06-13', status: 'פתוח'  as const, priority: 'רגיל'  as const, category: 'החלטה'   as const },
 ];
 
@@ -359,7 +359,7 @@ const decisions: Decision[] = [
 export const SEED: AppState = {
   trip: {
     id: 'trip_tnf_2026',
-    title: 'טנריף · החבר׳ה · יוני 2026',
+    title: 'טנריף · הפרלמנט בטנריף · יוני 2026',
     startDate: DATES[0],
     endDate: DATES[7],
     travelersCount: 7,
