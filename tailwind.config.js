@@ -19,12 +19,16 @@ export default {
       borderRadius: { '2xl':'1.25rem', '3xl':'1.75rem' },
       animation: {
         'fade-up': 'fadeUp .35s ease-out both',
+        'fade-in': 'fadeIn .22s ease-out both',
         'sheet-in': 'sheetIn .28s cubic-bezier(.2,.8,.2,1) both',
+        'modal-in': 'modalIn .22s cubic-bezier(.2,.8,.2,1) both',
         'pulse-soft': 'pulseSoft 2.4s ease-in-out infinite'
       },
       keyframes: {
         fadeUp: { '0%':{opacity:0,transform:'translateY(8px)'}, '100%':{opacity:1,transform:'translateY(0)'} },
+        fadeIn: { '0%':{opacity:0}, '100%':{opacity:1} },
         sheetIn: { '0%':{transform:'translateY(100%)'}, '100%':{transform:'translateY(0)'} },
+        modalIn: { '0%':{opacity:0,transform:'scale(.96)'}, '100%':{opacity:1,transform:'scale(1)'} },
         pulseSoft: { '0%,100%':{opacity:1}, '50%':{opacity:.55} }
       }
     }

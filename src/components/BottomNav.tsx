@@ -14,7 +14,7 @@ export function BottomNav({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => v
   return (
     <nav
       dir="rtl"
-      className="fixed bottom-0 inset-x-0 z-40 mx-auto max-w-md px-3 pb-[max(env(safe-area-inset-bottom),10px)] pt-2"
+      className="fixed bottom-0 inset-x-0 z-30 mx-auto max-w-md px-3 pb-[max(env(safe-area-inset-bottom),10px)] pt-2"
     >
       <div className="rounded-3xl bg-white/95 backdrop-blur shadow-card border border-ocean-100 grid grid-cols-5">
         {ITEMS.map(item => {
