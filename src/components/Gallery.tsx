@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 
 interface ImgSrc { thumb: string; full: string; }
 
-const CACHE_PREFIX = 'tnf_gallery_v2:';
+const CACHE_PREFIX = 'tnf_gallery_v3:';
 const TTL_MS = 7 * 24 * 60 * 60 * 1000; // 1 week
 const TARGET_COUNT = 10;
 
