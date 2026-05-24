@@ -10,7 +10,7 @@ function load(): AppState {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as AppState;
-      return migrate(parsed);
+      return scrubBrand(migrate(parsed));
     }
     // migrate v1 → v2
     const old = localStorage.getItem(OLD_KEY);
@@ -23,10 +23,58 @@ function load(): AppState {
         activities: v1.activities || SEED.activities,
         checklist: v1.checklist || SEED.checklist,
       };
-      return merged;
+      return scrubBrand(merged);
     }
   } catch {}
   return SEED;
+}
+
+// ---------- brand scrub migration ----------
+// Permanent, idempotent scrub: rewrites any cached occurrence of the old
+// brand "החבר׳ה" / "חבר׳ה" (with any apostrophe variant) to "הפרלמנט" /
+// "פרלמנט". Runs on every load so stale localStorage from before the
+// rebrand is corrected without requiring a hard reset. Safe to remove
+// once we are confident no users still have v<7 caches in the wild.
+// Apostrophe variants caught: ׳ (U+05F3 geresh), ʼ (U+02BC), ’ (U+2019),
+// ' (U+0027 straight quote). Pattern requires the trailing apostrophe+ה
+// so the count word "חברים" is NOT matched.
+const BRAND_RE = /(ה?)חבר[׳ʼ’']ה/g;
+function scrubString(s: any): any {
+  if (typeof s !== 'string') return s;
+  if (!s.includes('חבר')) return s;
+  return s.replace(BRAND_RE, (_m, prefix) => (prefix ? 'הפרלמנט' : 'פרלמנט'));
+}
+function scrubDeep(value: any): any {
+  if (value == null) return value;
+  if (typeof value === 'string') return scrubString(value);
+  if (Array.isArray(value)) {
+    let mutated = false;
+    const out = value.map(v => {
+      const nv = scrubDeep(v);
+      if (nv !== v) mutated = true;
+      return nv;
+    });
+    return mutated ? out : value;
+  }
+  if (typeof value === 'object') {
+    let mutated = false;
+    const out: any = Array.isArray(value) ? [] : { ...value };
+    for (const k of Object.keys(value)) {
+      const nv = scrubDeep(value[k]);
+      if (nv !== value[k]) { mutated = true; out[k] = nv; }
+    }
+    return mutated ? out : value;
+  }
+  return value;
+}
+function scrubBrand(s: AppState): AppState {
+  const scrubbed = scrubDeep(s) as AppState;
+  // bump schemaVersion to 7 to mark scrub applied (scrub itself remains
+  // unconditional & idempotent for safety)
+  if (scrubbed.schemaVersion !== 7) {
+    return { ...scrubbed, schemaVersion: 7 };
+  }
+  return scrubbed;
 }
 
 function migrate(s: any): AppState {
@@ -78,7 +126,7 @@ function migrate(s: any): AppState {
     expenses: Array.isArray(s.expenses) ? s.expenses : [],
     settlements: Array.isArray(s.settlements) ? s.settlements : [],
     feedback: Array.isArray(s.feedback) ? s.feedback : [],
-    schemaVersion: 6,
+    schemaVersion: 7,
   };
 }
 

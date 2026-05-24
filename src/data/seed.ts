@@ -376,7 +376,7 @@ export const SEED: AppState = {
   expenses: [],
   settlements: [],
   feedback: [],
-  schemaVersion: 6
+  schemaVersion: 7
 };
 
 export const PLAN_IDS = { BALANCED: P1, NATURE: P2, BEACH: P3 };
