@@ -5,6 +5,7 @@ import { queryForActivity } from '../data/place_queries';
 import { instantImages } from '../components/Gallery';
 import { ActivityCard } from '../components/ActivityCard';
 import { ActivitySheet } from '../components/ActivitySheet';
+import { InsertSlot } from '../components/InsertSlot';
 import { TripProgress } from '../components/TripProgress';
 import { Chip } from '../components/Chip';
 import { detectConflicts, summarizeDay, dayPaceScore } from '../livemode';
@@ -179,6 +180,15 @@ export function Today() {
       <div className="lg:grid lg:grid-cols-3 lg:gap-4 lg:items-start space-y-3.5 lg:space-y-0">
         {/* LEFT COL — hero + later */}
         <div className="lg:col-span-2 space-y-3.5">
+          {next && (
+            <InsertSlot
+              planId={plan.id}
+              dayDate={activeDate}
+              prev={undefined}
+              next={next}
+              fallbackRegion={next.region}
+            />
+          )}
           {next ? (
             <div className="rounded-3xl bg-gradient-to-bl from-ocean-700 to-ocean-500 text-white shadow-card overflow-hidden">
               <div className="px-4 pt-4 flex items-center justify-between gap-2">
@@ -230,7 +240,14 @@ export function Today() {
               </div>
             </div>
           ) : (
-            <EmptyDay />
+            <>
+              <InsertSlot
+                planId={plan.id}
+                dayDate={activeDate}
+                fallbackRegion={'דרום'}
+              />
+              <EmptyDay />
+            </>
           )}
 
           {/* Later today — expanded by default */}
@@ -243,10 +260,19 @@ export function Today() {
               </button>
               {showLater && (
                 <div className="space-y-2">
-                  {later.map(a => (
-                    <ActivityCard key={a.id} a={a}
-                                  onClick={() => setSel(a)}
-                                  onReplace={(x) => setAltFor(x)} compact />
+                  {later.map((a, i) => (
+                    <React.Fragment key={a.id}>
+                      <ActivityCard a={a}
+                                    onClick={() => setSel(a)}
+                                    onReplace={(x) => setAltFor(x)} compact swipeable />
+                      <InsertSlot
+                        planId={plan.id}
+                        dayDate={activeDate}
+                        prev={a}
+                        next={later[i + 1]}
+                        fallbackRegion={a.region}
+                      />
+                    </React.Fragment>
                   ))}
                 </div>
               )}
