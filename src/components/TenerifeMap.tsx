@@ -1,215 +1,317 @@
-import React from 'react';
-import type { Activity, Region } from '../data/types';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import type { Activity, Region, Status } from '../data/types';
 import { CATEGORY_ICONS } from '../utils';
+import { coordForActivity } from '../data/place_coords';
 
 type Props = {
   activitiesByRegion: Map<Region, Activity[]>;
   selected: Region | null;
   onSelect: (r: Region) => void;
+  onSelectActivity?: (a: Activity) => void;
 };
 
-// heat color stops by activity count
-function heatColor(count: number): string {
-  if (count === 0) return '#cfe7f0';
-  if (count <= 1) return '#bfe0ed';
-  if (count <= 3) return '#7cc1dc';
-  if (count <= 5) return '#ffb37a';
-  if (count <= 7) return '#ff7a3d';
-  return '#d8541a';
-}
+const TENERIFE_CENTER: [number, number] = [28.27, -16.62];
+const DEFAULT_ZOOM = 10;
 
-// Real-ish Tenerife coastline projected from ~68 lat/lng points to a 1000×600 viewBox.
-// Includes pronounced Anaga (NE) and Teno (NW / Punta de Teno) peninsulas plus El Médano (S).
-// Projection: x = (lng + 16.95) / 0.87 * 1000, y = (28.62 - lat) / 0.65 * 600.
-const COAST_PATH =
-  'M 936.8,41.5 L 971.3,44.3 L 994.3,40.6 L 1011.5,32.3 L 1028.7,35.1 L 1040.2,41.5 ' +
-  'L 1046.0,48.9 L 1023.0,60.0 L 994.3,66.5 L 959.8,75.7 L 931.0,83.1 L 902.3,96.9 ' +
-  'L 873.6,110.8 L 839.1,124.6 L 804.6,138.5 L 758.6,147.7 L 712.6,166.2 L 655.2,198.5 ' +
-  'L 609.2,235.4 L 551.7,276.9 L 505.7,323.1 L 471.3,369.2 L 431.0,415.4 L 402.3,461.5 ' +
-  'L 379.3,503.1 L 373.6,535.4 L 390.8,558.5 L 408.0,572.3 L 434.5,574.2 L 454.0,567.7 ' +
-  'L 454.0,553.8 L 425.3,535.4 L 373.6,512.3 L 310.3,489.2 L 252.9,466.2 L 201.1,438.5 ' +
-  'L 155.2,410.8 L 132.2,383.1 L 120.7,355.4 L 109.2,327.7 L 103.4,304.6 L 92.0,286.2 ' +
-  'L 74.7,272.3 L 51.7,258.5 L 34.5,251.1 L 25.3,246.5 L 34.5,241.8 L 51.7,238.2 ' +
-  'L 74.7,230.8 L 92.0,219.7 L 109.2,207.7 L 128.7,193.8 L 155.2,180.0 L 195.4,170.8 ' +
-  'L 229.9,166.2 L 270.1,170.8 L 310.3,177.2 L 356.3,184.6 L 396.6,193.8 L 436.8,198.5 ' +
-  'L 471.3,195.7 L 523.0,184.6 L 574.7,170.8 L 632.2,156.9 L 683.9,138.5 L 724.1,120.0 ' +
-  'L 758.6,101.5 L 804.6,83.1 L 862.1,60.0 L 913.8,44.3 Z';
-
-// Region centroids projected to same viewBox — placed on/near coast per region semantics.
-type RegionId = Exclude<Region, 'מחוץ לטנריף'>;
-const REGION_POS: Record<RegionId, { x: number; y: number }> = {
-  'צפון':         { x: 459.8, y: 189.2 },
-  'צפון-מזרח':   { x: 747.1, y: 115.4 },
-  'צפון-מערב':   { x: 195.4, y: 184.6 },
-  'מרכז':         { x: 354.0, y: 320.3 },
-  'מרכז-מערב':   { x: 132.2, y: 341.5 },
-  'מרכז-מזרח':   { x: 655.2, y: 244.6 },
-  'דרום':         { x: 252.9, y: 493.8 },
-  'דרום-מזרח':   { x: 448.3, y: 535.4 },
-  'דרום-מערב':   { x: 160.9, y: 406.2 },
+// Map status -> a CSS background color (hex) for marker circles
+const STATUS_BG: Record<Status, string> = {
+  'מתוכנן':     '#0ea5e9', // ocean
+  'הוזמן':      '#10b981', // emerald
+  'אופציונלי':  '#f59e0b', // amber
+  'דורש החלטה': '#f97316', // sunset
+  'בוצע':        '#6b7280', // zinc
+  'בוטל':        '#ef4444', // red
+  'בסיכון':      '#dc2626', // red-strong
+  'דולג':        '#a1a1aa', // zinc-light
 };
 
-// Optional label offset (dx, dy) for bubbles that would otherwise crowd — leader line drawn when nonzero.
-const LABEL_OFFSET: Partial<Record<RegionId, { dx: number; dy: number }>> = {};
-
-const POI = [
-  { id: 'teide',   x: 354.0, y: 320.3, emoji: '🌋', label: 'טיידה',           dx: 36, dy: -2 },
-  { id: 'tfn',     x: 700.0, y: 124.6, emoji: '✈️', label: 'נמל TFN',         dx: -36, dy: 0 },
-  { id: 'aguilas', x: 463.2, y: 191.1, emoji: '🏨', label: 'מלון Las Aguilas', dx: 32, dy: 4 },
+// Fixed POIs always shown
+const POI_FIXED = [
+  { id: 'teide',   coord: [28.2715, -16.6391] as [number, number], emoji: '🌋', label: 'טיידה' },
+  { id: 'tfn',     coord: [28.4827, -16.3415] as [number, number], emoji: '✈️', label: 'נמל TFN' },
+  { id: 'aguilas', coord: [28.4060, -16.5500] as [number, number], emoji: '🏨', label: 'מלון Las Aguilas' },
 ];
 
-const REGION_IDS = Object.keys(REGION_POS) as RegionId[];
+// Hook that polls window.L until it's defined
+function useLeaflet(): any | null {
+  const [L, setL] = useState<any | null>(() => (typeof window !== 'undefined' ? (window as any).L : null));
+  useEffect(() => {
+    if (L) return;
+    let cancelled = false;
+    let tries = 0;
+    const id = setInterval(() => {
+      tries++;
+      const w = (window as any).L;
+      if (w && !cancelled) {
+        setL(w);
+        clearInterval(id);
+      } else if (tries > 100) { // ~10s timeout
+        clearInterval(id);
+      }
+    }, 100);
+    return () => { cancelled = true; clearInterval(id); };
+  }, [L]);
+  return L;
+}
 
-const BUBBLE_R = 26;
+// stable small jitter per activity id
+function jitterFor(id: string): [number, number] {
+  let h1 = 0, h2 = 0;
+  for (let i = 0; i < id.length; i++) {
+    h1 = (h1 * 31 + id.charCodeAt(i)) | 0;
+    h2 = (h2 * 17 + id.charCodeAt(i) * 7) | 0;
+  }
+  const dx = ((h1 % 1000) / 1000 - 0.5) * 0.01; // ±0.005°
+  const dy = ((h2 % 1000) / 1000 - 0.5) * 0.01;
+  return [dx, dy];
+}
 
-export function TenerifeMap({ activitiesByRegion, selected, onSelect }: Props) {
+function buildDivIcon(L: any, emoji: string, color: string, opts?: { gold?: boolean; size?: number }) {
+  const size = opts?.size ?? 34;
+  const border = opts?.gold ? '3px solid #f5c518' : '2px solid #ffffff';
+  const html = `
+    <div style="
+      width:${size}px;height:${size}px;border-radius:9999px;
+      background:${color};border:${border};
+      box-shadow:0 2px 6px rgba(11,59,92,0.35);
+      display:flex;align-items:center;justify-content:center;
+      font-size:${Math.round(size * 0.55)}px;line-height:1;
+    ">${emoji}</div>`;
+  return L.divIcon({
+    className: 'tnf-marker',
+    html,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2],
+  });
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' } as any)[c]);
+}
+
+export function TenerifeMap({ activitiesByRegion, onSelectActivity }: Props) {
+  const L = useLeaflet();
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<any>(null);
+  const markerLayerRef = useRef<any>(null);
+  const userMarkerRef = useRef<any>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+
+  // Flatten the active plan activities from the map prop
+  const allActivities = useMemo(() => {
+    const out: Activity[] = [];
+    activitiesByRegion.forEach(arr => arr.forEach(a => out.push(a)));
+    return out;
+  }, [activitiesByRegion]);
+
+  // Track CDN load failure (~12s)
+  useEffect(() => {
+    if (L) return;
+    const timeout = setTimeout(() => {
+      if (!(window as any).L) setLoadFailed(true);
+    }, 12000);
+    return () => clearTimeout(timeout);
+  }, [L]);
+
+  // Initialize map once Leaflet + container are ready
+  useEffect(() => {
+    if (!L || !containerRef.current || mapRef.current) return;
+
+    const map = L.map(containerRef.current, {
+      center: TENERIFE_CENTER,
+      zoom: DEFAULT_ZOOM,
+      minZoom: 9,
+      maxZoom: 17,
+      scrollWheelZoom: false,
+      zoomControl: false,
+    });
+
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19,
+    }).addTo(map);
+
+    // Enable scroll wheel zoom on click; disable on blur
+    map.on('click', () => { map.scrollWheelZoom.enable(); });
+    map.on('mouseout', () => { map.scrollWheelZoom.disable(); });
+
+    // Fixed POIs (with gold border)
+    POI_FIXED.forEach(p => {
+      L.marker(p.coord, { icon: buildDivIcon(L, p.emoji, '#fff7e0', { gold: true, size: 36 }), title: p.label })
+        .bindPopup(`<div dir="rtl" style="font-weight:700;color:#0b3b5c">${p.emoji} ${p.label}</div>`)
+        .addTo(map);
+    });
+
+    markerLayerRef.current = L.layerGroup().addTo(map);
+    mapRef.current = map;
+
+    return () => {
+      map.remove();
+      mapRef.current = null;
+      markerLayerRef.current = null;
+    };
+  }, [L]);
+
+  // (Re)render activity markers when activities change
+  useEffect(() => {
+    if (!L || !mapRef.current || !markerLayerRef.current) return;
+    const layer = markerLayerRef.current;
+    layer.clearLayers();
+
+    // Track exact coords to spiral if 3+ overlap
+    const stackCounts = new Map<string, number>();
+
+    allActivities.forEach(a => {
+      const base = coordForActivity(a.name, a.region);
+      if (!base) return;
+      const [jx, jy] = jitterFor(a.id);
+      let lat = base.lat + jx;
+      let lng = base.lng + jy;
+
+      const key = `${base.lat.toFixed(3)}_${base.lng.toFixed(3)}`;
+      const idx = stackCounts.get(key) || 0;
+      stackCounts.set(key, idx + 1);
+      if (idx >= 3) {
+        const angle = (idx - 3) * (Math.PI / 4);
+        const r = 0.004 * (1 + Math.floor((idx - 3) / 8));
+        lat += Math.cos(angle) * r;
+        lng += Math.sin(angle) * r;
+      }
+
+      const emoji = CATEGORY_ICONS[a.category] || '📍';
+      const color = STATUS_BG[a.status] || '#0ea5e9';
+      const icon = buildDivIcon(L, emoji, color);
+
+      const marker = L.marker([lat, lng], { icon, title: a.name });
+      const popupHtml = `
+        <div dir="rtl" style="min-width:180px;font-family:Heebo,system-ui,sans-serif">
+          <div style="font-weight:800;color:#0b3b5c;font-size:14px;margin-bottom:4px">${emoji} ${escapeHtml(a.name)}</div>
+          <div style="font-size:12px;color:#555;margin-bottom:2px">${escapeHtml(a.dayDate)} · ${escapeHtml(a.startTime)}–${escapeHtml(a.endTime)}</div>
+          <div style="font-size:12px;color:#555;margin-bottom:8px">סטטוס: ${escapeHtml(a.status)} · ${escapeHtml(a.category)}</div>
+          <button data-act-id="${a.id}" style="
+            width:100%;background:#0b3b5c;color:#fff;border:0;
+            padding:6px 10px;border-radius:8px;font-weight:700;
+            font-size:12px;cursor:pointer;">פתח פרטים</button>
+        </div>`;
+      marker.bindPopup(popupHtml);
+      marker.on('popupopen', (e: any) => {
+        const btn = e.popup.getElement()?.querySelector(`[data-act-id="${a.id}"]`);
+        if (btn) {
+          btn.addEventListener('click', () => {
+            onSelectActivity?.(a);
+            mapRef.current.closePopup();
+          });
+        }
+      });
+      marker.addTo(layer);
+    });
+  }, [L, allActivities, onSelectActivity]);
+
+  const focusIsland = () => {
+    if (!mapRef.current) return;
+    mapRef.current.setView(TENERIFE_CENTER, DEFAULT_ZOOM, { animate: true });
+  };
+
+  const locateMe = () => {
+    if (!mapRef.current || !L) return;
+    if (!navigator.geolocation) {
+      setToast('שירות מיקום לא זמין');
+      setTimeout(() => setToast(null), 2500);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(pos => {
+      const { latitude, longitude } = pos.coords;
+      // Tenerife rough bounding box
+      const onIsland = latitude > 27.9 && latitude < 28.7 && longitude > -17.0 && longitude < -16.1;
+      if (!onIsland) {
+        setToast('אתה לא בטנריף 😉');
+        setTimeout(() => setToast(null), 2500);
+        return;
+      }
+      if (userMarkerRef.current) {
+        mapRef.current.removeLayer(userMarkerRef.current);
+      }
+      userMarkerRef.current = L.marker([latitude, longitude], {
+        icon: buildDivIcon(L, '📍', '#ef4444', { size: 32 }),
+        title: 'אני כאן',
+      }).addTo(mapRef.current);
+      mapRef.current.setView([latitude, longitude], 13, { animate: true });
+    }, () => {
+      setToast('לא הצלחנו לאתר אותך');
+      setTimeout(() => setToast(null), 2500);
+    });
+  };
+
   return (
-    <div className="w-full bg-gradient-to-b from-ocean-50 to-white rounded-3xl border border-ocean-100 shadow-soft p-2 overflow-hidden">
-      <div className="px-2 pt-1.5 pb-1">
+    <div className="w-full bg-gradient-to-b from-ocean-50 to-white rounded-3xl border border-ocean-100 shadow-soft overflow-hidden relative">
+      {/* Header row */}
+      <div className="flex items-center justify-between px-3 pt-2 pb-1.5 gap-2">
         <div className="text-[13px] font-extrabold text-ocean-700">טנריף · המפה שלנו</div>
+        <div className="text-[10px] text-zinc-500 hidden sm:block">הקש למפה לזום בגלגלת</div>
       </div>
-      <svg viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet" className="w-full h-auto" role="img" aria-label="מפת טנריף">
-        <defs>
-          <linearGradient id="sea" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="#eaf6fb" />
-            <stop offset="60%" stopColor="#d3ebf4" />
-            <stop offset="100%" stopColor="#b9deeb" />
-          </linearGradient>
-          <linearGradient id="island" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="#f7eed5" />
-            <stop offset="60%" stopColor="#f3e5c5" />
-            <stop offset="100%" stopColor="#e6d3a4" />
-          </linearGradient>
-          <filter id="islandShadow" x="-10%" y="-10%" width="120%" height="120%">
-            <feDropShadow dx="0" dy="3" stdDeviation="4" floodColor="#0b3b5c" floodOpacity="0.18" />
-          </filter>
-          <filter id="bubbleShadow" x="-30%" y="-30%" width="160%" height="160%">
-            <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#0b3b5c" floodOpacity="0.28" />
-          </filter>
-        </defs>
 
-        {/* sea backdrop */}
-        <rect width="1000" height="600" fill="url(#sea)" />
+      {/* Map container */}
+      <div className="relative" style={{ borderRadius: '1.25rem', overflow: 'hidden' }}>
+        <div
+          ref={containerRef}
+          className="w-full"
+          style={{ height: 'clamp(420px, 60vh, 640px)' }}
+          aria-label="מפת טנריף אינטראקטיבית"
+        />
 
-        {/* "ים" hint label top-right ocean */}
-        <text x="980" y="22" textAnchor="end" fontSize="12" fontWeight="800" fill="#0b3b5c" opacity="0.55">ים</text>
+        {/* Loading skeleton */}
+        {!L && !loadFailed && (
+          <div className="absolute inset-0 flex items-center justify-center bg-ocean-50/80 text-ocean-700 text-sm font-bold pointer-events-none">
+            טוען מפה…
+          </div>
+        )}
 
-        {/* subtle wave hints */}
-        <g stroke="#7cc1dc" strokeOpacity="0.35" strokeWidth="1.2" fill="none">
-          <path d="M 60,90 Q 100,80 140,90 T 230,90" />
-          <path d="M 780,540 Q 820,530 860,540 T 950,540" />
-          <path d="M 50,500 Q 80,492 110,500" />
-        </g>
+        {/* Error fallback */}
+        {loadFailed && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-ocean-50 text-ocean-700 text-sm p-4 text-center">
+            <div className="font-bold mb-2">המפה לא נטענה. נסו לרענן.</div>
+            <a
+              href="https://www.openstreetmap.org/?mlat=28.27&mlon=-16.62#map=10/28.27/-16.62"
+              target="_blank" rel="noreferrer"
+              className="underline text-ocean-600"
+            >פתח מפת OSM בדפדפן</a>
+          </div>
+        )}
 
-        {/* island */}
-        <g filter="url(#islandShadow)">
-          <path d={COAST_PATH} fill="url(#island)" opacity="0.95" stroke="#a78a52" strokeWidth="1.2" strokeLinejoin="round" />
-        </g>
+        {/* Floating controls (top-left in RTL means visually left) */}
+        <div className="absolute top-2 left-2 z-[400] flex flex-col gap-1.5">
+          <button
+            onClick={focusIsland}
+            className="bg-white/95 hover:bg-white text-ocean-700 text-[12px] font-bold px-2.5 py-1.5 rounded-lg shadow border border-ocean-100"
+            style={{ minHeight: 44 }}
+            aria-label="התמקד באי טנריף"
+          >🎯 התמקד באי</button>
+          <button
+            onClick={locateMe}
+            className="bg-white/95 hover:bg-white text-ocean-700 text-[12px] font-bold px-2.5 py-1.5 rounded-lg shadow border border-ocean-100"
+            style={{ minHeight: 44 }}
+            aria-label="מצא את המיקום שלי"
+          >📍 איפה אני?</button>
+        </div>
 
-        {/* subtle interior texture (mountain ridge hint) */}
-        <g opacity="0.3" fill="none" stroke="#a8854a" strokeWidth="1">
-          <path d="M 200,300 Q 320,260 420,330 Q 540,400 700,290" />
-          <path d="M 260,360 Q 380,330 480,380 Q 600,430 740,350" />
-        </g>
+        {toast && (
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-[500] bg-ocean-700 text-white text-[12px] font-bold px-3 py-1.5 rounded-full shadow">
+            {toast}
+          </div>
+        )}
+      </div>
 
-        {/* POIs — emoji + tiny shadow, no big white circle */}
-        <g>
-          {POI.map(p => {
-            const px = p.x + (p.dx ?? 0);
-            const py = p.y + (p.dy ?? 0);
-            return (
-              <g key={p.id} className="pointer-events-none" filter="url(#bubbleShadow)">
-                <text x={px} y={py + 5} textAnchor="middle" fontSize="16">{p.emoji}</text>
-              </g>
-            );
-          })}
-        </g>
-
-        {/* region bubbles */}
-        <g>
-          {REGION_IDS.map(rid => {
-            const acts = activitiesByRegion.get(rid) || [];
-            const isSel = selected === rid;
-            const fill = heatColor(acts.length);
-            const off = LABEL_OFFSET[rid] || { dx: 0, dy: 0 };
-            const pos = REGION_POS[rid];
-            const x = pos.x + off.dx;
-            const y = pos.y + off.dy;
-
-            // top 2 by priority for category icons
-            const top = [...acts]
-              .filter(a => a.category !== 'מלון' && a.category !== 'נסיעה / לוגיסטיקה')
-              .sort((a,b) => (b.priority === 'גבוה' ? 1 : 0) - (a.priority === 'גבוה' ? 1 : 0))
-              .slice(0, 2);
-
-            const r = isSel ? BUBBLE_R + 3 : BUBBLE_R;
-
-            return (
-              <g key={rid}
-                 className="cursor-pointer"
-                 onClick={() => onSelect(rid)}
-                 role="button"
-                 aria-label={`${rid} — ${acts.length} פעילויות`}>
-                {/* leader line if offset */}
-                {(off.dx !== 0 || off.dy !== 0) && (
-                  <line x1={pos.x} y1={pos.y} x2={x} y2={y}
-                        stroke="#0b3b5c" strokeOpacity="0.4" strokeWidth="1" strokeDasharray="3 2" />
-                )}
-                <g filter="url(#bubbleShadow)">
-                  <circle cx={x} cy={y} r={r}
-                          fill={fill}
-                          stroke={isSel ? '#ff7a3d' : '#ffffff'}
-                          strokeWidth={isSel ? 4 : 2.5}
-                          style={{ transition: 'all .15s' }} />
-                  {isSel && (
-                    <circle cx={x} cy={y} r={r + 4}
-                            fill="none" stroke="#ff7a3d" strokeOpacity="0.45" strokeWidth="2" />
-                  )}
-                </g>
-                {/* count */}
-                <text x={x} y={y - 3} textAnchor="middle"
-                      className="select-none pointer-events-none"
-                      fontSize="19" fontWeight="900" fill="#0b3b5c">{acts.length}</text>
-                {/* region name */}
-                <text x={x} y={y + 12} textAnchor="middle"
-                      className="select-none pointer-events-none"
-                      fontSize="8.5" fontWeight="800" fill="#0b3b5c">{rid}</text>
-                {/* category icons floating under the bubble */}
-                {top.length > 0 && (
-                  <g className="pointer-events-none">
-                    {top.map((a, i) => (
-                      <text key={a.id}
-                            x={x - 10 + i * 20}
-                            y={y + r + 12}
-                            textAnchor="middle"
-                            fontSize="13"
-                            className="select-none">
-                        {CATEGORY_ICONS[a.category]}
-                      </text>
-                    ))}
-                  </g>
-                )}
-              </g>
-            );
-          })}
-        </g>
-
-        {/* compass — moved to empty SW ocean corner, smaller */}
-        <g transform="translate(50, 555)" className="pointer-events-none">
-          <circle r="18" fill="#fff" stroke="#0b3b5c" strokeWidth="1.2" opacity="0.95" />
-          <text textAnchor="middle" y="-5" fontSize="9" fontWeight="900" fill="#0b3b5c">N</text>
-          <line x1="0" y1="-1" x2="0" y2="9" stroke="#ff7a3d" strokeWidth="1.8" />
-          <text textAnchor="middle" y="17" fontSize="8" fontWeight="700" fill="#0b3b5c">S</text>
-        </g>
-      </svg>
-
-      {/* legend — single line, compact */}
-      <div className="flex flex-nowrap items-center gap-1.5 text-[9.5px] text-zinc-600 px-2 py-1 overflow-x-auto">
-        <span className="font-bold text-ocean-700">צפיפות:</span>
-        <span className="flex items-center gap-0.5"><span className="w-2.5 h-2.5 rounded-full" style={{background:'#bfe0ed'}}/>מעט</span>
-        <span className="flex items-center gap-0.5"><span className="w-2.5 h-2.5 rounded-full" style={{background:'#7cc1dc'}}/>בינוני</span>
-        <span className="flex items-center gap-0.5"><span className="w-2.5 h-2.5 rounded-full" style={{background:'#ff7a3d'}}/>הרבה</span>
-        <span className="flex items-center gap-0.5"><span className="w-2.5 h-2.5 rounded-full" style={{background:'#d8541a'}}/>מאוד</span>
+      {/* Legend */}
+      <div className="flex flex-nowrap items-center gap-1.5 text-[10px] text-zinc-600 px-3 py-1.5 overflow-x-auto">
+        <span className="font-bold text-ocean-700">סטטוס:</span>
+        <span className="flex items-center gap-0.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background:'#0ea5e9' }} />מתוכנן</span>
+        <span className="flex items-center gap-0.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background:'#10b981' }} />הוזמן</span>
+        <span className="flex items-center gap-0.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background:'#f59e0b' }} />אופציונלי</span>
+        <span className="flex items-center gap-0.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background:'#f97316' }} />החלטה</span>
         <span className="mx-0.5 text-zinc-300">·</span>
         <span>🌋 טיידה</span>
         <span>✈️ TFN</span>

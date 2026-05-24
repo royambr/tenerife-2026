@@ -31,7 +31,8 @@ export function MapScreen() {
       </header>
 
       <TenerifeMap activitiesByRegion={byRegion} selected={region}
-                   onSelect={(r) => setRegion(prev => prev === r ? null : r)} />
+                   onSelect={(r) => setRegion(prev => prev === r ? null : r)}
+                   onSelectActivity={(a) => setSel(a)} />
 
       {region && (
         <div className="rounded-2xl bg-white border border-ocean-100 shadow-soft p-3.5">
