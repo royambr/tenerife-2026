@@ -3,15 +3,19 @@ import { createPortal } from 'react-dom';
 
 interface ImgSrc { thumb: string; full: string; }
 
-const CACHE_PREFIX = 'tnf_gallery_v3:';
+const CACHE_PREFIX = 'tnf_gallery_v4:';
 const TTL_MS = 7 * 24 * 60 * 60 * 1000; // 1 week
 const TARGET_COUNT = 10;
 
 interface CacheEntry { ts: number; images: ImgSrc[]; }
 
-function readCache(query: string): ImgSrc[] | null {
+function cacheKey(query: string, wikiTitle?: string): string {
+  return CACHE_PREFIX + (wikiTitle ? `wiki:${wikiTitle}|` : '') + query;
+}
+
+function readCache(key: string): ImgSrc[] | null {
   try {
-    const raw = localStorage.getItem(CACHE_PREFIX + query);
+    const raw = localStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as CacheEntry;
     if (Date.now() - parsed.ts > TTL_MS) return null;
@@ -20,10 +24,9 @@ function readCache(query: string): ImgSrc[] | null {
   } catch { return null; }
 }
 
-function writeCache(query: string, images: ImgSrc[]) {
+function writeCache(key: string, images: ImgSrc[]) {
   try {
-    const entry: CacheEntry = { ts: Date.now(), images };
-    localStorage.setItem(CACHE_PREFIX + query, JSON.stringify(entry));
+    localStorage.setItem(key, JSON.stringify({ ts: Date.now(), images } as CacheEntry));
   } catch {}
 }
 
@@ -64,20 +67,84 @@ async function fetchWikimedia(query: string): Promise<ImgSrc[]> {
   } catch { return []; }
 }
 
-export function Gallery({ query }: { query: string }) {
+interface WikipediaSummary {
+  originalimage?: { source: string };
+  thumbnail?: { source: string };
+}
+
+async function fetchWikipediaHero(title: string): Promise<ImgSrc | null> {
+  try {
+    const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}?redirect=true`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = (await res.json()) as WikipediaSummary;
+    const full = data?.originalimage?.source;
+    const thumb = data?.thumbnail?.source || full;
+    if (!full || !thumb) return null;
+    return { thumb, full };
+  } catch { return null; }
+}
+
+interface MediaListItem {
+  type?: string;
+  srcset?: { src: string; scale?: string }[];
+  original?: { source: string };
+  title?: string;
+}
+
+async function fetchWikipediaMediaList(title: string): Promise<ImgSrc[]> {
+  try {
+    const url = `https://en.wikipedia.org/api/rest_v1/page/media-list/${encodeURIComponent(title)}?redirect=true`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+    const items: MediaListItem[] = data?.items || [];
+    const out: ImgSrc[] = [];
+    for (const it of items) {
+      if (it.type && it.type !== 'image') continue;
+      // The srcset urls are protocol-relative like //upload.wikimedia.org/...
+      const top = it.srcset?.[0]?.src;
+      const orig = it.original?.source;
+      const thumbRaw = top || orig;
+      const fullRaw = orig || top;
+      if (!thumbRaw || !fullRaw) continue;
+      const thumb = thumbRaw.startsWith('//') ? `https:${thumbRaw}` : thumbRaw;
+      const full = fullRaw.startsWith('//') ? `https:${fullRaw}` : fullRaw;
+      if (/\.(svg|pdf|webm|ogv|gif)$/i.test(full)) continue;
+      out.push({ thumb, full });
+      if (out.length >= TARGET_COUNT) break;
+    }
+    return out;
+  } catch { return []; }
+}
+
+function dedupe(images: ImgSrc[]): ImgSrc[] {
+  const seen = new Set<string>();
+  const out: ImgSrc[] = [];
+  for (const i of images) {
+    const k = i.full.split('?')[0];
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(i);
+  }
+  return out;
+}
+
+export function Gallery({ query, wikipediaTitle }: { query: string; wikipediaTitle?: string }) {
+  const key = cacheKey(query, wikipediaTitle);
+
   // Synchronous initial state — render immediately on first paint.
   const initial = useMemo<ImgSrc[]>(() => {
-    const cached = readCache(query);
+    const cached = readCache(key);
     return cached && cached.length ? cached : instantImages(query);
-  }, [query]);
-  const hadCacheRef = useRef<boolean>(!!readCache(query));
+  }, [key, query]);
+  const hadCacheRef = useRef<boolean>(!!readCache(key));
 
   const [images, setImages] = useState<ImgSrc[]>(initial);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
   useEffect(() => {
-    // re-init when query changes
-    const cached = readCache(query);
+    const cached = readCache(key);
     if (cached && cached.length) {
       setImages(cached);
       hadCacheRef.current = true;
@@ -85,26 +152,70 @@ export function Gallery({ query }: { query: string }) {
       setImages(instantImages(query));
       hadCacheRef.current = false;
     }
-  }, [query]);
+  }, [key, query]);
 
   useEffect(() => {
-    if (hadCacheRef.current) return; // already have a good cached set
+    if (hadCacheRef.current) return;
     let cancelled = false;
-    (async () => {
-      const wiki = await fetchWikimedia(query);
-      if (cancelled || wiki.length === 0) return;
-      // Merge: prefer wiki thumbs, top up to TARGET_COUNT with current instant fallback.
+
+    // Track the best set we've seen so far, so partial results show progressively.
+    let hero: ImgSrc | null = null;
+    let mediaList: ImgSrc[] = [];
+    let commons: ImgSrc[] = [];
+
+    function recomputeAndApply(final = false) {
+      if (cancelled) return;
       const fallback = instantImages(query);
-      const combined: ImgSrc[] = [...wiki];
-      while (combined.length < TARGET_COUNT && combined.length < fallback.length + wiki.length) {
-        combined.push(fallback[combined.length - wiki.length] ?? fallback[combined.length % fallback.length]);
+      const combined: ImgSrc[] = [];
+      if (hero) combined.push(hero);
+      for (const m of mediaList) combined.push(m);
+      for (const c of commons) combined.push(c);
+      let deduped = dedupe(combined);
+      while (deduped.length < TARGET_COUNT) {
+        const next = fallback[deduped.length % fallback.length];
+        if (!next) break;
+        deduped.push(next);
+        deduped = dedupe(deduped);
+        if (deduped.length >= TARGET_COUNT) break;
       }
-      const sliced = combined.slice(0, TARGET_COUNT);
-      writeCache(query, sliced);
-      if (!cancelled) setImages(sliced);
-    })();
+      const sliced = deduped.slice(0, TARGET_COUNT);
+      setImages(sliced);
+      if (final && (hero || mediaList.length || commons.length)) {
+        writeCache(key, sliced);
+      }
+    }
+
+    // Fire all sources in parallel.
+    const heroPromise = wikipediaTitle ? fetchWikipediaHero(wikipediaTitle) : Promise.resolve(null);
+    const mediaPromise = wikipediaTitle ? fetchWikipediaMediaList(wikipediaTitle) : Promise.resolve([] as ImgSrc[]);
+    const commonsPromise = fetchWikimedia(query);
+
+    heroPromise.then(h => {
+      if (cancelled || !h) return;
+      hero = h;
+      recomputeAndApply();
+    });
+
+    mediaPromise.then(m => {
+      if (cancelled || !m.length) return;
+      mediaList = m;
+      recomputeAndApply();
+    });
+
+    commonsPromise.then(c => {
+      if (cancelled) return;
+      commons = c;
+      recomputeAndApply();
+    });
+
+    // Once everything has settled, persist to cache.
+    Promise.all([heroPromise, mediaPromise, commonsPromise]).then(() => {
+      if (cancelled) return;
+      recomputeAndApply(true);
+    });
+
     return () => { cancelled = true; };
-  }, [query]);
+  }, [key, query, wikipediaTitle]);
 
   return (
     <>

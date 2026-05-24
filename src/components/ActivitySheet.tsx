@@ -6,7 +6,7 @@ import { CATEGORY_ICONS, STATUS_COLORS, buildMapsUrl, buildWazeUrl, costLabel } 
 import { store, useEditMode } from '../store';
 import { ActivityEditor } from './ActivityEditor';
 import { Gallery } from './Gallery';
-import { queryForActivity } from '../data/place_queries';
+import { queryForActivity, wikipediaTitleForActivity } from '../data/place_queries';
 import { ActivityAttendees } from './ActivityAttendees';
 import { ActivityPhotos } from './ActivityPhotos';
 import { ActivityExpenses } from './ActivityExpenses';
@@ -25,6 +25,7 @@ export function ActivitySheet({ activity, open, onClose, onReplace }:{
   const maps = a.mapsUrl || buildMapsUrl(a.name);
   const waze = a.wazeUrl || buildWazeUrl(a.name);
   const galleryQuery = queryForActivity(a);
+  const wikipediaTitle = wikipediaTitleForActivity(a) || undefined;
 
   if (editing) {
     return (
@@ -54,7 +55,7 @@ export function ActivitySheet({ activity, open, onClose, onReplace }:{
 
         <ActivityAttendees activity={a} />
 
-        {galleryQuery && <Gallery query={galleryQuery} />}
+        {galleryQuery && <Gallery query={galleryQuery} wikipediaTitle={wikipediaTitle} />}
 
         <ActivityPhotos activity={a} />
 

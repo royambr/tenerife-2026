@@ -21,6 +21,34 @@ export function mapRegionToEnglish(region: Region): string {
   return REGION_EN[region] || 'Tenerife';
 }
 
+// Wikipedia article titles for known places — these give us the iconic lead
+// photo from the article instead of generic Commons-search results.
+const WIKIPEDIA_TITLES: { match: RegExp; title: string }[] = [
+  { match: /Loro Parque/i,                title: 'Loro_Parque' },
+  { match: /Siam Park/i,                  title: 'Siam_Park' },
+  { match: /Pico Viejo/i,                 title: 'Pico_Viejo' },
+  { match: /Roques de Garc[íi]a/i,        title: 'Roques_de_García' },
+  { match: /Anaga/i,                      title: 'Anaga_Rural_Park' },
+  { match: /Teno/i,                       title: 'Teno_Rural_Park' },
+  { match: /Masca/i,                      title: 'Masca,_Spain' },
+  { match: /Los Gigantes/i,               title: 'Acantilados_de_Los_Gigantes' },
+  { match: /רכבל Teide|Teide/i,            title: 'Teide' },
+  { match: /Playa Jard[íi]n/i,            title: 'Playa_Jardín' },
+  { match: /Garachico/i,                  title: 'Garachico' },
+  { match: /La Laguna/i,                  title: 'San_Cristóbal_de_La_Laguna' },
+  { match: /La Orotava/i,                 title: 'La_Orotava' },
+  { match: /Puerto de la Cruz/i,          title: 'Puerto_de_la_Cruz' },
+  { match: /Costa Adeje/i,                title: 'Costa_Adeje' },
+  { match: /Playa de las Am[ée]ricas/i,   title: 'Playa_de_las_Américas' },
+  { match: /Buenavista/i,                 title: 'Buenavista_del_Norte' },
+  { match: /Tenerife North Airport|TFN/i, title: 'Tenerife_North_Airport' },
+];
+
+export function wikipediaTitleFor(name: string): string | null {
+  for (const w of WIKIPEDIA_TITLES) if (w.match.test(name)) return w.title;
+  return null;
+}
+
 // Exact-match patterns for known landmarks/hotels/places.
 const PATTERNS: { match: RegExp; query: string }[] = [
   // Landmarks / parks / nature
@@ -175,3 +203,15 @@ export function buildQuery(a: Activity): string | null {
 
 // Back-compat export (was used by Gallery/ActivitySheet before).
 export const queryForActivity = buildQuery;
+
+/** Return the best-guess Wikipedia article title for this activity, or null. */
+export function wikipediaTitleForActivity(a: Activity): string | null {
+  const direct = wikipediaTitleFor(a.name);
+  if (direct) return direct;
+  const tail = tailSegment(a.name);
+  if (tail) {
+    const t = wikipediaTitleFor(tail);
+    if (t) return t;
+  }
+  return null;
+}

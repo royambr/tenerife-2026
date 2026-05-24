@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { Activity, DayPart, Region } from '../data/types';
 import { Sheet } from './Sheet';
 import { ActivityEditor } from './ActivityEditor';
+import { AttractionSearch } from './AttractionSearch';
 import { store } from '../store';
 import { minutesFromHM } from '../utils';
 
@@ -72,10 +73,17 @@ export function InsertSlot({
   }
 
   const [draft, setDraft] = useState<Activity | null>(null);
+  const [editorKey, setEditorKey] = useState(0);
 
   function handleOpen() {
     setDraft(buildDefault());
+    setEditorKey(k => k + 1);
     setOpen(true);
+  }
+
+  function applyPatch(patch: Partial<Activity>) {
+    setDraft(d => (d ? { ...d, ...patch } as Activity : d));
+    setEditorKey(k => k + 1);
   }
 
   function handleSave(a: Activity) {
@@ -113,11 +121,15 @@ export function InsertSlot({
       </button>
       <Sheet open={open} onClose={() => { setOpen(false); setDraft(null); }} title="הוספת פעילות חדשה">
         {draft && (
-          <ActivityEditor
-            initial={draft}
-            onSave={handleSave}
-            onCancel={() => { setOpen(false); setDraft(null); }}
-          />
+          <div className="space-y-4">
+            <AttractionSearch apply={applyPatch} currentName={draft.name} />
+            <ActivityEditor
+              key={editorKey}
+              initial={draft}
+              onSave={handleSave}
+              onCancel={() => { setOpen(false); setDraft(null); }}
+            />
+          </div>
         )}
       </Sheet>
     </>
