@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { Activity, AppState, ChangeLogEntry, ChatMessage, ChecklistItem, DayPart, Decision, Expense, Settlement, TripPhoto } from './data/types';
+import type { Activity, AppState, ChangeLogEntry, ChatMessage, ChecklistItem, DayPart, Decision, Expense, FeedbackEntry, Settlement, TripPhoto } from './data/types';
 import { SEED } from './data/seed';
 
 const KEY = 'tenerife_2026_state_v2';
@@ -77,7 +77,8 @@ function migrate(s: any): AppState {
     photos: Array.isArray(s.photos) ? s.photos : [],
     expenses: Array.isArray(s.expenses) ? s.expenses : [],
     settlements: Array.isArray(s.settlements) ? s.settlements : [],
-    schemaVersion: 5,
+    feedback: Array.isArray(s.feedback) ? s.feedback : [],
+    schemaVersion: 6,
   };
 }
 
@@ -411,6 +412,38 @@ export const store = {
     log({ action: 'settle_del', summary: `בוטל סילוק`, beforeSnapshot: before });
     emit();
   },
+  // ---------- feedback ----------
+  addFeedback(input: { text: string; screen?: string; rating?: 1|2|3|4|5 }) {
+    const text = (input.text || '').trim();
+    if (!text) return;
+    const me = state.currentParticipantId;
+    const entry: FeedbackEntry = {
+      id: uid('fb'),
+      ts: Date.now(),
+      who: me,
+      text,
+      screen: input.screen,
+      rating: input.rating,
+    };
+    state = { ...state, feedback: [entry, ...state.feedback] };
+    const who = state.participants.find(p => p.id === me)?.name || 'מישהו';
+    log({ action: 'fb_add', scope: 'other', summary: `${who} כתב פידבק`, afterSnapshot: entry });
+    emit();
+  },
+  deleteFeedback(id: string) {
+    const before = state.feedback.find(f => f.id === id);
+    if (!before) return;
+    state = { ...state, feedback: state.feedback.filter(f => f.id !== id) };
+    log({ action: 'fb_del', scope: 'other', summary: `נמחק פידבק`, beforeSnapshot: before });
+    emit();
+  },
+  clearFeedback() {
+    if (state.feedback.length === 0) return;
+    const before = state.feedback;
+    state = { ...state, feedback: [] };
+    log({ action: 'fb_clear', scope: 'other', summary: `נוקה כל הפידבק (${before.length})`, beforeSnapshot: before });
+    emit();
+  },
   undo(entryId: string) {
     const entry = state.changeLog.find(e => e.id === entryId);
     if (!entry || entry.undone) return;
@@ -492,6 +525,15 @@ export const store = {
           break;
         case 'decision_new':
           if (entry.afterSnapshot) state = { ...state, decisions: state.decisions.filter(d => d.id !== entry.afterSnapshot.id) };
+          break;
+        case 'fb_add':
+          if (entry.afterSnapshot) state = { ...state, feedback: state.feedback.filter(f => f.id !== entry.afterSnapshot.id) };
+          break;
+        case 'fb_del':
+          if (entry.beforeSnapshot) state = { ...state, feedback: [entry.beforeSnapshot, ...state.feedback] };
+          break;
+        case 'fb_clear':
+          if (Array.isArray(entry.beforeSnapshot)) state = { ...state, feedback: entry.beforeSnapshot };
           break;
       }
       state = { ...state, changeLog: state.changeLog.map(e => e.id === entryId ? { ...e, undone: true } : e) };

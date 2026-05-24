@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { useStore, store } from '../store';
+import { useStore, store, _internalToast } from '../store';
 import { Chip } from '../components/Chip';
 import { Sheet } from '../components/Sheet';
-import type { ChecklistItem, Decision } from '../data/types';
+import type { ChecklistItem, Decision, FeedbackEntry, Participant } from '../data/types';
 import { PROFILES } from '../data/profiles';
 import { tripCostForParticipant } from '../data/costs';
 import { SettlementCard } from '../components/SettlementCard';
@@ -164,6 +164,8 @@ export function Manage() {
         </div>
       </Card>
 
+      <FeedbackCard />
+
       <CollapsibleCard title="📞 שימושי וחירום" count={3}>
         <Row title="חירום באירופה" sub="חיוג: 112" tone="red" />
         <Row title="שגרירות ישראל במדריד" sub="+34 91 782 9500" tone="ocean" />
@@ -324,6 +326,138 @@ function ChecklistEditor({ initial, onSave, onCancel }:{
         <button onClick={() => v.title.trim() && onSave(v)} className="rounded-2xl bg-ocean-700 text-white py-3 font-bold min-h-[44px]">שמור</button>
         <button onClick={onCancel} className="rounded-2xl bg-white border border-ocean-100 text-ocean-700 py-3 font-bold min-h-[44px]">ביטול</button>
       </div>
+    </div>
+  );
+}
+
+const SCREEN_LABELS: Record<string,string> = {
+  general:  'כללי',
+  today:    'היום',
+  schedule: 'לו״ז',
+  plans:    'אפשרויות',
+  map:      'מפה',
+  manage:   'ניהול',
+};
+
+function starString(r?: number) {
+  if (!r) return '';
+  return '⭐'.repeat(r);
+}
+
+function formatFeedbackForClipboard(items: FeedbackEntry[], participants: Participant[]): string {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2,'0');
+  const stamp = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const lines: string[] = [];
+  lines.push('=== פידבק על הפרלמנט בטנריף ===');
+  lines.push(`נוצר: ${stamp}`);
+  lines.push('');
+  items.forEach((f, i) => {
+    const who = participants.find(p => p.id === f.who);
+    const name = who ? `${who.emoji || ''}${who.name}`.trim() : f.who;
+    const stars = f.rating ? ` · ${starString(f.rating)}` : '';
+    const screen = f.screen ? ` · מסך: ${SCREEN_LABELS[f.screen] || f.screen}` : '';
+    lines.push(`[${i+1}] ${name}${stars}${screen} · ${timeAgo(f.ts)}`);
+    lines.push(f.text);
+    if (i < items.length - 1) lines.push('---');
+  });
+  return lines.join('\n');
+}
+
+function FeedbackCard() {
+  const feedback = useStore(s => s.feedback);
+  const participants = useStore(s => s.participants);
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [fallback, setFallback] = useState<string | null>(null);
+
+  async function copyAll() {
+    if (feedback.length === 0) return;
+    const text = formatFeedbackForClipboard(feedback, participants);
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        _internalToast('הועתק! עכשיו תדביק בשיחה עם קלוד');
+        return;
+      }
+    } catch {}
+    setFallback(text);
+  }
+
+  function clearAll() {
+    if (feedback.length === 0) return;
+    if (confirm(`למחוק את כל ${feedback.length} הפידבקים?`)) {
+      store.clearFeedback();
+    }
+  }
+
+  return (
+    <div className="rounded-2xl bg-white border border-ocean-100 p-3 lg:col-span-full">
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-[13px] font-bold text-ocean-700">✍️ פידבק ({feedback.length})</div>
+      </div>
+
+      {feedback.length === 0 ? (
+        <div className="text-center py-6 text-zinc-500">
+          <div className="text-4xl mb-1">💭</div>
+          <div className="text-[12px]">עוד אין פידבק. תהיה הראשון להגיד מה אתה חושב.</div>
+        </div>
+      ) : (
+        <>
+          <button onClick={copyAll}
+                  className="w-full rounded-2xl bg-ocean-700 text-white py-2.5 text-[13px] font-extrabold min-h-[44px] mb-2">
+            📋 העתק את כל הפידבק לקלוד
+          </button>
+
+          <div className="space-y-1.5">
+            {feedback.map(f => {
+              const who = participants.find(p => p.id === f.who);
+              const isOpen = expanded === f.id;
+              const preview = f.text.length > 60 ? f.text.slice(0, 60) + '…' : f.text;
+              return (
+                <div key={f.id} className="rounded-xl bg-ocean-50/40 border border-ocean-100 p-2.5">
+                  <button onClick={() => setExpanded(isOpen ? null : f.id)}
+                          className="w-full text-right">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {f.rating && <span className="text-[11px] text-sunset-500">{starString(f.rating)}</span>}
+                      <span className="text-[12px] font-bold text-ocean-700">{who?.emoji || '👤'}{who?.name || 'מישהו'}</span>
+                      {f.screen && <Chip tone="ocean">{SCREEN_LABELS[f.screen] || f.screen}</Chip>}
+                      <span className="text-[10px] text-zinc-500 mr-auto">{timeAgo(f.ts)}</span>
+                    </div>
+                    <div className={`text-[12px] mt-1 ${isOpen ? 'whitespace-pre-wrap text-zinc-700' : 'truncate text-zinc-600'}`}>
+                      {isOpen ? f.text : preview}
+                    </div>
+                  </button>
+                  {isOpen && (
+                    <div className="mt-2 flex justify-end">
+                      <button onClick={() => { if (confirm('למחוק פידבק?')) store.deleteFeedback(f.id); }}
+                              className="text-[11px] text-red-500 font-bold min-h-[28px] px-2">🗑️ מחק</button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <button onClick={clearAll}
+                  className="w-full mt-2 rounded-xl bg-white border border-red-200 text-red-600 py-2 text-[12px] font-bold min-h-[36px]">
+            🗑️ נקה הכל
+          </button>
+        </>
+      )}
+
+      {fallback !== null && (
+        <Sheet open onClose={() => setFallback(null)} title="העתק ידנית">
+          <div className="space-y-3">
+            <div className="text-[12px] text-zinc-600">לא הצלחנו להעתיק אוטומטית. סמן ידנית והעתק:</div>
+            <textarea readOnly autoFocus value={fallback}
+                      onFocus={(e) => e.currentTarget.select()}
+                      rows={12}
+                      className="w-full rounded-xl border border-ocean-100 bg-white px-3 py-2.5 text-[12px] leading-5 font-mono" />
+            <button onClick={() => setFallback(null)}
+                    className="w-full rounded-2xl bg-ocean-700 text-white py-3 font-bold min-h-[44px]">סגור</button>
+          </div>
+        </Sheet>
+      )}
     </div>
   );
 }

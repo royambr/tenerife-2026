@@ -260,6 +260,15 @@ export function Today() {
               </button>
               {showLater && (
                 <div className="space-y-2">
+                  {later.length > 0 && (
+                    <InsertSlot
+                      planId={plan.id}
+                      dayDate={activeDate}
+                      prev={undefined}
+                      next={later[0]}
+                      fallbackRegion={later[0].region}
+                    />
+                  )}
                   {later.map((a, i) => (
                     <React.Fragment key={a.id}>
                       <ActivityCard a={a}

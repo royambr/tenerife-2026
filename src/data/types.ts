@@ -161,6 +161,15 @@ export interface Decision {
   relatedActivityId?: string;
 }
 
+export interface FeedbackEntry {
+  id: string;
+  ts: number;
+  who: string;          // participantId
+  text: string;
+  screen?: string;      // 'today' / 'schedule' / 'plans' / 'map' / 'manage' / 'general'
+  rating?: 1|2|3|4|5;   // optional star rating
+}
+
 export interface AppState {
   trip: Trip;
   plans: Plan[];
@@ -173,5 +182,6 @@ export interface AppState {
   photos: TripPhoto[];
   expenses: Expense[];
   settlements: Settlement[];
+  feedback: FeedbackEntry[];
   schemaVersion?: number;
 }

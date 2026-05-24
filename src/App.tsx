@@ -8,6 +8,7 @@ import { MapScreen } from './screens/MapScreen';
 import { Manage } from './screens/Manage';
 import { useStore, useEditMode, editStore } from './store';
 import { ToastHost } from './components/ToastHost';
+import { FeedbackFab } from './components/FeedbackSheet';
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('today');
@@ -53,6 +54,7 @@ export default function App() {
         <BottomNav tab={tab} onChange={setTab} />
       </div>
 
+      <FeedbackFab activeTab={tab} />
       <ToastHost />
     </div>
   );

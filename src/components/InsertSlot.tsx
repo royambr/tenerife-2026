@@ -46,8 +46,8 @@ export function InsertSlot({
     if (prev && next) {
       startMin = Math.round((minutesFromHM(prev.endTime) + minutesFromHM(next.startTime)) / 2);
     } else if (next && !prev) {
-      // very top → 1h before first
-      startMin = Math.max(0, minutesFromHM(next.startTime) - 60);
+      // very top → 1h before first, floored at 06:00
+      startMin = Math.max(6 * 60, minutesFromHM(next.startTime) - 60);
     } else if (prev && !next) {
       // very bottom → 1h after last, capped to 23:30 so end < 24:00
       startMin = Math.min(23 * 60 + 30, minutesFromHM(prev.endTime) + 60);
@@ -55,7 +55,12 @@ export function InsertSlot({
       // empty day → default mid-morning
       startMin = 10 * 60;
     }
-    const endMin = Math.min(23 * 60 + 59, startMin + 60);
+    // end = start + 1h, but never overflow into `next` (leave 5min buffer)
+    let endMin = Math.min(23 * 60 + 59, startMin + 60);
+    if (next) {
+      const nextCap = minutesFromHM(next.startTime) - 5;
+      if (nextCap > startMin) endMin = Math.min(endMin, nextCap);
+    }
     const region: Region = (prev?.region || next?.region || fallbackRegion) as Region;
     return {
       id: uid(),
