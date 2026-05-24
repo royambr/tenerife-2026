@@ -122,7 +122,12 @@ function dedupe(images: ImgSrc[]): ImgSrc[] {
   const seen = new Set<string>();
   const out: ImgSrc[] = [];
   for (const i of images) {
-    const k = i.full.split('?')[0];
+    // Use the full URL (including query string) as the dedupe key.
+    // Stripping the query collapsed all source.unsplash.com fallback URLs
+    // — which only differ by ?sig=N — into one key, leaving the
+    // top-up while-loop unable to ever reach TARGET_COUNT and spinning
+    // forever the moment any Wikipedia result was mixed in.
+    const k = i.full;
     if (seen.has(k)) continue;
     seen.add(k);
     out.push(i);
@@ -171,12 +176,15 @@ export function Gallery({ query, wikipediaTitle }: { query: string; wikipediaTit
       for (const m of mediaList) combined.push(m);
       for (const c of commons) combined.push(c);
       let deduped = dedupe(combined);
-      while (deduped.length < TARGET_COUNT) {
-        const next = fallback[deduped.length % fallback.length];
-        if (!next) break;
-        deduped.push(next);
-        deduped = dedupe(deduped);
+      // Top-up with fallback images. Cap iterations defensively so a
+      // future dedupe-collision can never spin forever again.
+      const maxIters = TARGET_COUNT + fallback.length + 4;
+      let iters = 0;
+      for (const f of fallback) {
         if (deduped.length >= TARGET_COUNT) break;
+        if (++iters > maxIters) break;
+        deduped.push(f);
+        deduped = dedupe(deduped);
       }
       const sliced = deduped.slice(0, TARGET_COUNT);
       setImages(sliced);
