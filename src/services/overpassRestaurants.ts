@@ -39,6 +39,23 @@ function matchStaticRating(name: string): number | null {
   return match ? match.rating : null;
 }
 
+const CUISINE_HE: Record<string, string> = {
+  'פירות ים': 'פירות ים ודגים', 'בשרים': 'בשר וגריל', 'טפאס': 'טפאס ספרדיות',
+  'ספרדי': 'מטבח ספרדי-קנרי', 'ים-תיכוני': 'מטבח ים-תיכוני',
+  'וגן': 'מטבח צמחוני', 'בינלאומי': 'מטבח בינלאומי',
+};
+
+function buildHebrewDescription(tags: Record<string, string>, cuisineHe: string): string {
+  const parts: string[] = [];
+  const base = CUISINE_HE[cuisineHe] ?? 'מסעדה מקומית';
+  parts.push(base);
+  if (tags['addr:street']) parts.push(`ברחוב ${tags['addr:street']}`);
+  if (tags['outdoor_seating'] === 'yes') parts.push('ישיבה בחוץ');
+  if (tags['takeaway'] === 'yes') parts.push('טייק-אווי');
+  if (tags['wheelchair'] === 'yes') parts.push('נגיש');
+  return parts.join(' · ');
+}
+
 export async function fetchOSMRestaurants(): Promise<Restaurant[]> {
   const query = `
     [out:json][timeout:20];
@@ -70,12 +87,13 @@ export async function fetchOSMRestaurants(): Promise<Restaurant[]> {
       const meals: ('breakfast' | 'lunch' | 'dinner')[] = hasBreakfast
         ? ['breakfast', 'lunch', 'dinner']
         : ['lunch', 'dinner'];
+      const cuisineHe = mapCuisine(n.tags.cuisine);
       return {
         name,
-        cuisine: mapCuisine(n.tags.cuisine),
+        cuisine: cuisineHe,
         region: 'OSM',
         priceLevel: 2 as const,
-        description: n.tags['description'] ?? n.tags['cuisine'] ?? 'מסעדה מ-OpenStreetMap',
+        description: buildHebrewDescription(n.tags, cuisineHe),
         mapsUrl: buildMapsUrl(name, n.lat, n.lon),
         rating,
         meals,

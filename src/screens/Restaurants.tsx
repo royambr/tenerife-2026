@@ -56,7 +56,10 @@ function RestaurantCard({ r }: { r: EnrichedRestaurant }) {
             <span className="text-[9px] bg-emerald-50 text-emerald-600 font-bold rounded-full px-1.5 py-0.5 flex-shrink-0">OSM</span>
           )}
         </div>
-        {r.rating > 0 && <div className="mt-0.5"><Stars rating={r.rating} /></div>}
+        {r.rating > 0
+          ? <div className="mt-0.5"><Stars rating={r.rating} /></div>
+          : <div className="mt-0.5 text-[10px] text-zinc-400 font-medium">ללא דירוג</div>
+        }
         <div className="text-[11px] text-zinc-500 mt-0.5">{r.description}</div>
         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
           <span className="text-[10px] font-bold bg-ocean-50 text-ocean-700 rounded-full px-2 py-0.5">{r.cuisine}</span>
