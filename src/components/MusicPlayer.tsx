@@ -13,6 +13,7 @@ declare global {
 interface SCWidget {
   play(): void;
   pause(): void;
+  skip(index: number): void;
   setVolume(v: number): void;
   bind(event: string, cb: (data?: unknown) => void): void;
   getCurrentSound(cb: (sound: { title?: string }) => void): void;
@@ -71,6 +72,12 @@ export function MusicPlayer({ playRef }: Props) {
       });
 
       widget.bind(window.SC.Widget.Events.PAUSE, () => setPlaying(false));
+
+      // When the set ends, restart from track 0 so only the Ozora set loops
+      widget.bind(window.SC.Widget.Events.FINISH, () => {
+        widget.skip(0);
+        widget.play();
+      });
     };
     tryInit();
   }
@@ -96,7 +103,7 @@ export function MusicPlayer({ playRef }: Props) {
   const iframeSrc =
     `https://w.soundcloud.com/player/?url=${encodeURIComponent(SC_URL)}` +
     `&auto_play=false&hide_related=true&show_comments=false&show_user=false` +
-    `&show_reposts=false&show_teaser=false&visual=false&continuous_play=true`;
+    `&show_reposts=false&show_teaser=false&visual=false&continuous_play=false`;
 
   return (
     <div className="fixed bottom-20 left-3 z-50 lg:bottom-6 lg:left-6" dir="ltr">

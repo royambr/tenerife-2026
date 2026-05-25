@@ -17,7 +17,7 @@ export function RestaurantList() {
         onClick={() => setOpen(v => !v)}
         className="w-full flex items-center justify-between px-4 py-3"
       >
-        <span className="text-[13px] font-extrabold text-ocean-700">🍽️ מסעדות לפי מטבח</span>
+        <span className="text-[13px] font-extrabold text-ocean-700">🍽️ מסעדות מומלצות</span>
         <span className="text-[11px] text-zinc-400">{open ? '▴' : '▾'}</span>
       </button>
 
