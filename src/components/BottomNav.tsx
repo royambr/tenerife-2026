@@ -10,7 +10,7 @@ const ITEMS: { id: Tab; label: string; icon: string }[] = [
   { id: 'map',         label: 'מפה',      icon: '🗺️' },
   { id: 'restaurants', label: 'מסעדות',   icon: '🍽️' },
   { id: 'events',      label: 'אירועים',  icon: '🎉' },
-  { id: 'feedback',    label: 'פידבק',    icon: '💬' },
+  { id: 'feedback',    label: 'פידבקים',    icon: '💬' },
 ];
 
 export function BottomNav({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => void }) {

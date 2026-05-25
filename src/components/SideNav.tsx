@@ -11,7 +11,7 @@ const ITEMS: { id: Tab; label: string; icon: string; hint: string }[] = [
   { id: 'events',      label: 'אירועים',  icon: '🎉', hint: 'אירועים בטנריף' },
   { id: 'manage',      label: 'ניהול',    icon: '🧰', hint: 'צ׳ק-ליסט והזמנות' },
   { id: 'phrasebook',  label: 'ספרדית',   icon: '🗣️', hint: 'ביטויים שימושיים' },
-  { id: 'feedback',    label: 'פידבק',    icon: '💬', hint: 'הערות ורעיונות' },
+  { id: 'feedback',    label: 'פידבקים',    icon: '💬', hint: 'הערות ורעיונות' },
 ];
 
 export function SideNav({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => void }) {
