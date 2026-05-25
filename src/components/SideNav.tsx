@@ -6,6 +6,7 @@ const ITEMS: { id: Tab; label: string; icon: string; hint: string }[] = [
   { id: 'schedule', label: 'לו״ז',    icon: '📅', hint: '8 ימים מלאים' },
   { id: 'plans',    label: 'אפשרויות', icon: '✨', hint: '3 סגנונות טיול' },
   { id: 'map',      label: 'מפה',      icon: '🗺️', hint: 'לפי אזורי האי' },
+  { id: 'events',   label: 'אירועים',  icon: '🎉', hint: 'אירועים בטנריף' },
   { id: 'manage',   label: 'ניהול',    icon: '🧰', hint: 'צ׳ק-ליסט והזמנות' },
 ];
 

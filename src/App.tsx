@@ -6,6 +6,7 @@ import { Schedule } from './screens/Schedule';
 import { Plans } from './screens/Plans';
 import { MapScreen } from './screens/MapScreen';
 import { Manage } from './screens/Manage';
+import { Events } from './screens/Events';
 import { useStore, useEditMode, editStore } from './store';
 import { ToastHost } from './components/ToastHost';
 import { FeedbackFab } from './components/FeedbackSheet';
@@ -48,6 +49,7 @@ export default function App() {
               {tab === 'schedule' && <Schedule />}
               {tab === 'plans'    && <Plans />}
               {tab === 'map'      && <MapScreen />}
+              {tab === 'events'   && <Events />}
               {tab === 'manage'   && <Manage />}
             </div>
           </div>
