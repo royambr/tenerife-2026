@@ -28,10 +28,11 @@ interface Props {
 export function MusicPlayer({ playRef }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const widgetRef = useRef<SCWidget | null>(null);
+  const titleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [ready, setReady] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [title, setTitle] = useState('Shpongle — Static Live at Ozora');
+  const [title, setTitle] = useState('Static Live at Ozora');
   const [volume, setVolume] = useState(() => {
     const saved = localStorage.getItem(VOLUME_KEY);
     return saved ? parseInt(saved, 10) : 70;
@@ -51,16 +52,25 @@ export function MusicPlayer({ playRef }: Props) {
       if (!window.SC || !iframeRef.current) { setTimeout(tryInit, 200); return; }
       const widget = window.SC.Widget(iframeRef.current);
       widgetRef.current = widget;
+
       widget.bind(window.SC.Widget.Events.READY, () => {
         widget.setVolume(volume);
         setReady(true);
       });
+
       widget.bind(window.SC.Widget.Events.PLAY, () => {
         setPlaying(true);
-        widget.getCurrentSound(s => { if (s?.title) setTitle(s.title); });
+        // Debounce title update — only update after 1s of stable playback
+        // to avoid flickering when SC widget briefly triggers PLAY on track transitions
+        if (titleTimerRef.current) clearTimeout(titleTimerRef.current);
+        titleTimerRef.current = setTimeout(() => {
+          widget.getCurrentSound(s => {
+            if (s?.title) setTitle(s.title);
+          });
+        }, 1000);
       });
+
       widget.bind(window.SC.Widget.Events.PAUSE, () => setPlaying(false));
-      widget.bind(window.SC.Widget.Events.FINISH, () => setPlaying(false));
     };
     tryInit();
   }
@@ -85,7 +95,8 @@ export function MusicPlayer({ playRef }: Props) {
 
   const iframeSrc =
     `https://w.soundcloud.com/player/?url=${encodeURIComponent(SC_URL)}` +
-    `&auto_play=false&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false&visual=false`;
+    `&auto_play=false&hide_related=true&show_comments=false&show_user=false` +
+    `&show_reposts=false&show_teaser=false&visual=false&continuous_play=true`;
 
   return (
     <div className="fixed bottom-20 left-3 z-50 lg:bottom-6 lg:left-6" dir="ltr">
@@ -110,26 +121,25 @@ export function MusicPlayer({ playRef }: Props) {
           </button>
           <button
             onClick={() => setExpanded(true)}
-            className="text-[11px] font-bold opacity-80 hover:opacity-100 truncate max-w-[120px]"
+            className="text-[11px] font-bold opacity-80 hover:opacity-100"
           >
-            ♫ {playing ? title.slice(0, 22) : 'Shpongle'}
+            ♫ Shpongle
           </button>
         </div>
       )}
 
       {expanded && (
         <div className="bg-ocean-700 text-white rounded-2xl shadow-card p-4 w-64">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-2">
             <span className="text-[13px] font-extrabold">♫ Shpongle</span>
             <button onClick={() => setExpanded(false)} className="text-[11px] opacity-60 hover:opacity-100">✕</button>
           </div>
-          <div className="text-[11px] opacity-70 mb-3 truncate">{title}</div>
-          <div className="flex items-center justify-center gap-4 mb-4">
+          <div className="text-[11px] opacity-60 mb-3 truncate">{title}</div>
+          <div className="flex items-center justify-center mb-4">
             <button
               onClick={togglePlay}
               disabled={!ready}
               className="text-[32px] leading-none disabled:opacity-40"
-              aria-label={playing ? 'pause' : 'play'}
             >
               {playing ? '⏸' : '▶'}
             </button>
@@ -143,7 +153,7 @@ export function MusicPlayer({ playRef }: Props) {
             />
             <span className="text-[11px] opacity-60 w-6 text-right">{volume}</span>
           </div>
-          {!ready && <div className="text-[10px] opacity-50 text-center mt-2">טוען נגן...</div>}
+          {!ready && <div className="text-[10px] opacity-50 text-center mt-2">טוען...</div>}
         </div>
       )}
     </div>

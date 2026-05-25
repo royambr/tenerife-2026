@@ -21,6 +21,7 @@ import { ActivitySpinner } from '../components/ActivitySpinner';
 import { FunFact } from '../components/FunFact';
 import { Phrasebook } from '../components/Phrasebook';
 import { RestaurantList } from '../components/RestaurantList';
+import { LiveWeather } from '../components/LiveWeather';
 import { REGION_CENTERS, haversineKm } from '../data/regions';
 
 export function Today() {
@@ -112,6 +113,7 @@ export function Today() {
 
   return (
     <div className="p-4 pb-2 space-y-3.5 animate-fade-up lg:max-w-5xl">
+      <LiveWeather />
       <TripCountdown />
       {/* compact header */}
       <header className="flex items-center justify-between">
