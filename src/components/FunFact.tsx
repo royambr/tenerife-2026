@@ -1,50 +1,47 @@
 import React, { useEffect, useState } from 'react';
 
-async function fetchFact(): Promise<string> {
-  try {
-    const res = await fetch('https://uselessfacts.jsph.pl/api/v2/facts/random?language=en');
-    const data = await res.json();
-    const english = (data.text as string).replace(/`/g, "'");
-    const transRes = await fetch(
-      `https://api.mymemory.translated.net/get?q=${encodeURIComponent(english)}&langpair=en|he`
-    );
-    const transData = await transRes.json();
-    const translated: string = transData.responseData?.translatedText;
-    return translated && !translated.includes('MYMEMORY WARNING') ? translated : english;
-  } catch {
-    return 'טנריף — "האי האביב הנצחי" 🌋';
-  }
-}
+const TENERIFE_FACTS = [
+  'טנריף היא האי הגדול ביותר מבין האיים הקנריים, עם שטח של כ-2,034 קמ"ר.',
+  'הר טיידה (3,715 מ׳) הוא ההר הגבוה ביותר בספרד ובאיים האטלנטיים.',
+  'טנריף נקראת "האי האביב הנצחי" בשל טמפרטורות נעימות לאורך כל השנה.',
+  'הר טיידה הוא אתר מורשת עולמית של אונסק"ו ומושך מעל 3 מיליון מבקרים בשנה.',
+  'לוס קריסטיאנוס ופלאיה דה לאס אמריקאס הם האזורים התיירותיים הפופולריים ביותר בדרום האי.',
+  'הטיידה, כשהוא מכוסה שלג, נראה מהים ויוצר נוף מרהיב של הר געש מושלג.',
+  'האי הוא בית לדרקיית הדרקון (Dracaena draco) — עץ אנדמי לקנריים שיכול לחיות אלפי שנים.',
+  'בטנריף חיים כ-900,000 תושבים קבועים, מה שהופך אותה לאי המאוכלס ביותר בקנריים.',
+  'סנטה קרוז דה טנריף היא עיר הבירה של האי ושל מחוז טנריף.',
+  'הקרנבל של סנטה קרוז הוא אחד הגדולים בעולם — שני רק לקרנבל ריו דה ז׳נרו.',
+  'טנריף ממוקמת ב-100 ק"מ בלבד מהחוף הצפון-מערבי של אפריקה.',
+  'הפארק הלאומי טיידה מושך יותר מבקרים מהגראנד קניון האמריקאי.',
+  'בטנריף יש שני נמלי תעופה: הצפוני (TFN) והדרומי (TFS) המשרת את רוב הטיסות הבינלאומיות.',
+  'האוקיינוס האטלנטי סביב טנריף חם מספיק לשחייה לאורך כל השנה — בין 20-24 מעלות.',
+  'ה-Guanches — תושבי האי הקדמונים — הגיעו מצפון אפריקה לפני יותר מ-2,000 שנה.',
+  'הפארק הכפרי אנאגה בצפון-מזרח האי הוא אחד היערות הלורל העתיקים בעולם.',
+  'בטנריף ניתן לגלוש על שלג בטיידה ולשחות בים ביום אחד.',
+  'הבננות הקנריות — קטנות ומתוקות — הן אחד היצוא החקלאי המרכזי של האי.',
+  'ספינות קרוז רבות עוגנות בנמל סנטה קרוז, מה שהופך אותה לאחת מתחנות הקרוז הגדולות באירופה.',
+  'הצבע הכחול העמוק של האוקיינוס סביב טנריף נובע מעומק של יותר מ-3,000 מ׳ ממש מחוף האי.',
+];
 
 export function FunFact() {
-  const [fact, setFact] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [index, setIndex] = useState(() => Math.floor(Math.random() * TENERIFE_FACTS.length));
 
-  async function load() {
-    setLoading(true);
-    const text = await fetchFact();
-    setFact(text);
-    setLoading(false);
+  function next() {
+    setIndex(i => (i + 1) % TENERIFE_FACTS.length);
   }
 
   useEffect(() => {
-    load();
-    const id = setInterval(load, 60_000);
+    const id = setInterval(next, 60_000);
     return () => clearInterval(id);
   }, []);
 
   return (
     <div className="rounded-2xl bg-white border border-ocean-100 p-3">
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[11px] font-extrabold text-ocean-700">💡 ידעת?</span>
-        {!loading && (
-          <button onClick={load} className="text-[10px] text-zinc-400 hover:text-ocean-600">↻ עוד</button>
-        )}
+        <span className="text-[11px] font-extrabold text-ocean-700">💡 ידעת? — טנריף</span>
+        <button onClick={next} className="text-[10px] text-zinc-400 hover:text-ocean-600">↻ עוד</button>
       </div>
-      {loading
-        ? <div className="text-[12px] text-zinc-400 animate-pulse">טוען עובדה...</div>
-        : <p className="text-[12px] text-zinc-600 leading-5">{fact}</p>
-      }
+      <p className="text-[12px] text-zinc-600 leading-5">{TENERIFE_FACTS[index]}</p>
     </div>
   );
 }
