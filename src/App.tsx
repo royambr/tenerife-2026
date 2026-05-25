@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { BottomNav, Tab } from './components/BottomNav';
 import { SideNav } from './components/SideNav';
 import { Today } from './screens/Today';
@@ -9,14 +9,18 @@ import { Manage } from './screens/Manage';
 import { useStore, useEditMode, editStore } from './store';
 import { ToastHost } from './components/ToastHost';
 import { FeedbackFab } from './components/FeedbackSheet';
+import { WelcomeScreen } from './components/WelcomeScreen';
+import { MusicPlayer } from './components/MusicPlayer';
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('today');
   const trip = useStore(s => s.trip);
   const edit = useEditMode();
+  const musicPlayRef = useRef<(() => void) | null>(null);
 
   return (
     <div dir="rtl" className={`min-h-screen text-ocean-700 ${edit ? 'pt-10' : ''}`}>
+      <WelcomeScreen onEnter={() => musicPlayRef.current?.()} />
       {edit && (
         <div className="fixed top-0 inset-x-0 z-[80] bg-volcano-900 text-white text-center text-[12px] font-extrabold py-2 px-3 shadow-card flex items-center justify-center gap-3">
           <span>✏️ מצב עריכה פעיל — כל פעולה נשמרת בהיסטוריה</span>
@@ -56,6 +60,7 @@ export default function App() {
 
       <FeedbackFab activeTab={tab} />
       <ToastHost />
+      <MusicPlayer playRef={musicPlayRef} />
     </div>
   );
 }

@@ -7,10 +7,13 @@ export interface DayWeather {
   tMax: number;
   tMin: number;
   rain: number; // % probability
+  uvMax: number;
+  sunrise: string; // "06:32"
+  sunset: string;  // "21:07"
 }
 
-const CACHE_KEY = 'tnf_weather_v1';
-const TTL_MS = 6 * 60 * 60 * 1000;
+const CACHE_KEY = 'tnf_weather_v2';
+const TTL_MS = 60 * 60 * 1000; // 1h — stays fresh through the day
 
 interface Cache { fetchedAt: number; data: DayWeather[]; }
 
@@ -33,7 +36,7 @@ let inflight: Promise<DayWeather[]> | null = null;
 
 async function fetchWeather(start: string, end: string): Promise<DayWeather[]> {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=28.46&longitude=-16.25` +
-    `&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max` +
+    `&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max,uv_index_max,sunrise,sunset` +
     `&timezone=Atlantic%2FCanary&start_date=${start}&end_date=${end}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error('weather fetch failed');
@@ -47,6 +50,9 @@ async function fetchWeather(start: string, end: string): Promise<DayWeather[]> {
       tMax: Math.round(j.daily.temperature_2m_max[i]),
       tMin: Math.round(j.daily.temperature_2m_min[i]),
       rain: j.daily.precipitation_probability_max[i] ?? 0,
+      uvMax: Math.round(j.daily.uv_index_max[i] ?? 0),
+      sunrise: (j.daily.sunrise[i] as string).slice(11, 16),
+      sunset: (j.daily.sunset[i] as string).slice(11, 16),
     });
   }
   return out;

@@ -8,6 +8,7 @@ import type { Activity, DayPart } from '../data/types';
 import { Sheet } from '../components/Sheet';
 import { ActivityEditor } from '../components/ActivityEditor';
 import { AlternativesSheet } from '../components/AlternativesSheet';
+import { WeatherBadge } from '../components/WeatherBadge';
 
 const SECTIONS: { part: DayPart; label: string }[] = [
   { part: 'morning', label: 'בוקר' },
@@ -58,6 +59,7 @@ export function Schedule() {
                     aria-label={day.intensity} title={day.intensity} />
             </div>
 
+            <WeatherBadge date={date} />
             {dayConflicts.slice(0, 2).map(c => (
               <div key={c.id} className={`rounded-xl p-2 text-[11px] font-bold mb-1 border ${
                 c.level === 'critical' ? 'bg-red-50 border-red-200 text-red-700' :

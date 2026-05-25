@@ -16,6 +16,11 @@ import { PROFILES } from '../data/profiles';
 import { useWeather, weatherEmoji, findWeather } from '../data/weather';
 import { dayCostForParticipant, tripCostForParticipant } from '../data/costs';
 import { useGeo, requestLocation } from '../data/geo';
+import { TripCountdown } from '../components/TripCountdown';
+import { ActivitySpinner } from '../components/ActivitySpinner';
+import { FunFact } from '../components/FunFact';
+import { Phrasebook } from '../components/Phrasebook';
+import { RestaurantList } from '../components/RestaurantList';
 import { REGION_CENTERS, haversineKm } from '../data/regions';
 
 export function Today() {
@@ -107,6 +112,7 @@ export function Today() {
 
   return (
     <div className="p-4 pb-2 space-y-3.5 animate-fade-up lg:max-w-5xl">
+      <TripCountdown />
       {/* compact header */}
       <header className="flex items-center justify-between">
         <div className="min-w-0">
@@ -160,6 +166,7 @@ export function Today() {
       )}
 
       <TripProgress dates={allDates} activeDate={activeDate} onPick={setActiveDate} />
+      <ActivitySpinner activities={todays} />
 
       {/* Pace meter */}
       <PaceMeter score={dayPace} onSuggest={() => next && setAltFor(next)} />
@@ -360,6 +367,9 @@ export function Today() {
       <ActivitySheet activity={sel} open={!!sel} onClose={() => setSel(null)} onReplace={(a) => { setSel(null); setAltFor(a); }} />
       <AlternativesSheet target={altFor} open={!!altFor} onClose={() => setAltFor(null)} />
       <TripJournal open={showJournal} onClose={() => setShowJournal(false)} />
+      <FunFact />
+      <RestaurantList />
+      <Phrasebook />
     </div>
   );
 }
