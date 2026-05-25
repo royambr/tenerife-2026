@@ -77,9 +77,6 @@ export function Restaurants() {
   const [activeCuisine, setActiveCuisine] = useState<string | null>(null);
   const [activeRegion, setActiveRegion] = useState<string | null>(null);
   const [activeMeal, setActiveMeal] = useState<string | null>(null);
-  const [minRating, setMinRating] = useState(4.0);
-  const [showUnrated, setShowUnrated] = useState(false);
-
   const regions = ['צפון', 'דרום', 'מרכז'];
 
   const applyFilters = (r: EnrichedRestaurant) => {
@@ -89,13 +86,9 @@ export function Restaurants() {
     return true;
   };
 
-  const rated = restaurants
-    .filter(r => r.rating >= minRating && applyFilters(r))
-    .sort((a, b) => b.rating - a.rating);
-
-  const unrated = restaurants
-    .filter(r => r.rating === 0 && r.source === 'osm' && applyFilters(r))
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const filtered = restaurants
+    .filter(applyFilters)
+    .sort((a, b) => b.rating - a.rating || a.name.localeCompare(b.name));
 
   return (
     <div className="p-4 pb-24 space-y-4 animate-fade-up lg:max-w-5xl">
@@ -103,7 +96,7 @@ export function Restaurants() {
         <h1 className="text-[22px] font-extrabold text-ocean-700">🍽️ מסעדות מומלצות</h1>
         <div className="flex items-center gap-2 mt-0.5">
           <p className="text-[12px] text-zinc-500">
-            {rated.length} מדורגות{unrated.length > 0 ? ` · ${unrated.length} נוספות` : ''}
+            {filtered.length} מסעדות
           </p>
           {loading ? (
             <span className="text-[10px] bg-zinc-100 text-zinc-400 rounded-full px-2 py-0.5">טוען מ-OpenStreetMap...</span>
@@ -143,62 +136,29 @@ export function Restaurants() {
         </div>
       </div>
 
-      {/* Region + rating row */}
-      <div className="flex flex-wrap items-end gap-4">
-        <div>
-          <div className="text-[11px] font-extrabold text-ocean-700 mb-2">אזור</div>
-          <div className="flex gap-1.5">
-            {regions.map(r => (
-              <button key={r} onClick={() => setActiveRegion(prev => prev === r ? null : r)}
-                className={`rounded-full px-3 py-1.5 text-[12px] font-bold transition-colors ${
-                  activeRegion === r ? 'bg-ocean-500 text-white' : 'bg-white border border-ocean-100 text-ocean-700 hover:border-ocean-300'
-                }`}>
-                {REGION_ICONS[r]} {r}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div>
-          <div className="text-[11px] font-extrabold text-ocean-700 mb-2">דירוג מינימלי</div>
-          <div className="flex gap-1.5">
-            {[4.0, 4.3, 4.5].map(r => (
-              <button key={r} onClick={() => setMinRating(r)}
-                className={`rounded-full px-3 py-1.5 text-[12px] font-bold transition-colors ${
-                  minRating === r ? 'bg-amber-400 text-white' : 'bg-white border border-ocean-100 text-ocean-700 hover:border-amber-300'
-                }`}>
-                ★ {r}+
-              </button>
-            ))}
-          </div>
+      {/* Region filter */}
+      <div>
+        <div className="text-[11px] font-extrabold text-ocean-700 mb-2">אזור</div>
+        <div className="flex gap-1.5">
+          {regions.map(r => (
+            <button key={r} onClick={() => setActiveRegion(prev => prev === r ? null : r)}
+              className={`rounded-full px-3 py-1.5 text-[12px] font-bold transition-colors ${
+                activeRegion === r ? 'bg-ocean-500 text-white' : 'bg-white border border-ocean-100 text-ocean-700 hover:border-ocean-300'
+              }`}>
+              {REGION_ICONS[r]} {r}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Results */}
-      {rated.length === 0 ? (
+      {filtered.length === 0 ? (
         <div className="rounded-2xl bg-white border border-ocean-100 p-8 text-center text-zinc-400 text-[13px]">
           לא נמצאו מסעדות בסינון זה
         </div>
       ) : (
         <div className="space-y-2">
-          {rated.map(r => <RestaurantCard key={`${r.source}-${r.name}`} r={r} />)}
-        </div>
-      )}
-
-      {/* Unrated OSM section */}
-      {unrated.length > 0 && (
-        <div>
-          <button
-            onClick={() => setShowUnrated(v => !v)}
-            className="w-full flex items-center justify-between rounded-2xl bg-zinc-50 border border-zinc-100 px-4 py-3 text-[12px] font-bold text-zinc-600"
-          >
-            <span>🗺️ מסעדות נוספות מ-OpenStreetMap ({unrated.length})</span>
-            <span>{showUnrated ? '▴' : '▾'}</span>
-          </button>
-          {showUnrated && (
-            <div className="space-y-2 mt-2">
-              {unrated.map(r => <RestaurantCard key={`${r.source}-${r.name}`} r={r} />)}
-            </div>
-          )}
+          {filtered.map(r => <RestaurantCard key={`${r.source}-${r.name}`} r={r} />)}
         </div>
       )}
 
