@@ -55,6 +55,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const playerRef = useRef<YTPlayer | null>(null);
   const playerReadyRef = useRef(false);
   const mutedRef = useRef(true);
+  const pendingStartRef = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
   const [ready, setReady] = useState(false);
@@ -76,6 +77,13 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
             setReady(true);
             playerRef.current?.playVideo();
             setPlaying(true);
+            if (pendingStartRef.current) {
+              pendingStartRef.current = false;
+              playerRef.current?.unMute();
+              playerRef.current?.setVolume(80);
+              mutedRef.current = false;
+              setMuted(false);
+            }
           },
           onStateChange: (e: { data: number }) => {
             if (e.data === 0) {
@@ -113,10 +121,14 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   // Call this synchronously inside a user-gesture handler — guarantees browser allows audio
   function startWithSound() {
-    if (!playerRef.current) return;
-    playerRef.current.unMute();
-    playerRef.current.setVolume(80);
-    playerRef.current.playVideo();
+    if (!playerReadyRef.current) {
+      // Player not ready yet — queue the unmute for when it loads
+      pendingStartRef.current = true;
+      return;
+    }
+    playerRef.current?.unMute();
+    playerRef.current?.setVolume(80);
+    playerRef.current?.playVideo();
     mutedRef.current = false;
     setMuted(false);
     setPlaying(true);
