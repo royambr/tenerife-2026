@@ -113,7 +113,10 @@ export function Today() {
   return (
     <div className="p-4 pb-2 space-y-3.5 animate-fade-up lg:max-w-5xl">
       <LiveWeather />
-      <TripCountdown />
+      <div className="flex gap-2 items-stretch">
+        <div className="flex-1 min-w-0"><FunFact /></div>
+        <div className="flex-shrink-0 w-auto"><TripCountdown /></div>
+      </div>
       {/* compact header */}
       <header className="flex items-center justify-between">
         <div className="min-w-0">
@@ -365,9 +368,6 @@ export function Today() {
 
         </div>
       </div>
-
-      <FunFact />
-      <Phrasebook />
 
       <ActivitySheet activity={sel} open={!!sel} onClose={() => setSel(null)} onReplace={(a) => { setSel(null); setAltFor(a); }} />
       <AlternativesSheet target={altFor} open={!!altFor} onClose={() => setAltFor(null)} />

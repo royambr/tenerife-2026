@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CUISINES } from '../data/restaurants';
-import { useRestaurants } from '../hooks/useRestaurants';
+import { useRestaurants, EnrichedRestaurant } from '../hooks/useRestaurants';
 
 const PRICE = ['', '€', '€€', '€€€'] as const;
 const REGION_ICONS: Record<string, string> = { 'צפון': '🌿', 'דרום': '☀️', 'מרכז': '🏔️' };
@@ -21,20 +21,62 @@ function Stars({ rating }: { rating: number }) {
   );
 }
 
+function RestaurantCard({ r }: { r: EnrichedRestaurant }) {
+  return (
+    <a
+      key={`${r.source}-${r.name}`}
+      href={r.mapsUrl}
+      target="_blank"
+      rel="noreferrer"
+      className="flex items-start gap-3 rounded-2xl bg-white border border-ocean-100 px-4 py-3 hover:border-ocean-300 active:bg-ocean-50 transition-colors"
+    >
+      <div className="text-2xl leading-none mt-0.5 flex-shrink-0">
+        {CUISINE_ICONS[r.cuisine] ?? '🍽️'}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5">
+          <div className="text-[14px] font-extrabold text-ocean-700 leading-tight">{r.name}</div>
+          {r.source === 'osm' && (
+            <span className="text-[9px] bg-emerald-50 text-emerald-600 font-bold rounded-full px-1.5 py-0.5 flex-shrink-0">OSM</span>
+          )}
+        </div>
+        {r.rating > 0 && <div className="mt-0.5"><Stars rating={r.rating} /></div>}
+        <div className="text-[11px] text-zinc-500 mt-0.5">{r.description}</div>
+        <div className="flex items-center gap-2 mt-1.5">
+          <span className="text-[10px] font-bold bg-ocean-50 text-ocean-700 rounded-full px-2 py-0.5">{r.cuisine}</span>
+          {r.region !== 'OSM' && (
+            <span className="text-[10px] text-zinc-400">{REGION_ICONS[r.region]} {r.region}</span>
+          )}
+          <span className="text-[10px] font-bold text-emerald-600">{PRICE[r.priceLevel]}</span>
+        </div>
+      </div>
+      <span className="text-ocean-400 text-[18px] flex-shrink-0 mt-1">›</span>
+    </a>
+  );
+}
+
 export function Restaurants() {
   const { restaurants, loading, osmCount } = useRestaurants();
   const [activeCuisine, setActiveCuisine] = useState<string | null>(null);
   const [activeRegion, setActiveRegion] = useState<string | null>(null);
   const [minRating, setMinRating] = useState(4.0);
+  const [showUnrated, setShowUnrated] = useState(false);
 
   const regions = ['צפון', 'דרום', 'מרכז'];
 
-  const filtered = restaurants.filter(r => {
-    if (r.rating < minRating) return false;
+  const applyFilters = (r: EnrichedRestaurant) => {
     if (activeCuisine && r.cuisine !== activeCuisine) return false;
     if (activeRegion && r.region !== activeRegion) return false;
     return true;
-  }).sort((a, b) => b.rating - a.rating);
+  };
+
+  const rated = restaurants
+    .filter(r => r.rating >= minRating && applyFilters(r))
+    .sort((a, b) => b.rating - a.rating);
+
+  const unrated = restaurants
+    .filter(r => r.rating === 0 && r.source === 'osm' && applyFilters(r))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div className="p-4 pb-24 space-y-4 animate-fade-up lg:max-w-5xl">
@@ -42,16 +84,12 @@ export function Restaurants() {
         <h1 className="text-[22px] font-extrabold text-ocean-700">🍽️ מסעדות מומלצות</h1>
         <div className="flex items-center gap-2 mt-0.5">
           <p className="text-[12px] text-zinc-500">
-            {filtered.length} מסעדות · טנריף 2026
+            {rated.length} מדורגות · {unrated.length} נוספות
           </p>
           {loading ? (
-            <span className="text-[10px] bg-zinc-100 text-zinc-400 rounded-full px-2 py-0.5">
-              טוען מ-OpenStreetMap...
-            </span>
+            <span className="text-[10px] bg-zinc-100 text-zinc-400 rounded-full px-2 py-0.5">טוען מ-OpenStreetMap...</span>
           ) : osmCount > 0 ? (
-            <span className="text-[10px] bg-emerald-50 text-emerald-600 font-bold rounded-full px-2 py-0.5">
-              ✓ {osmCount} מ-OpenStreetMap
-            </span>
+            <span className="text-[10px] bg-emerald-50 text-emerald-600 font-bold rounded-full px-2 py-0.5">✓ {osmCount} מ-OSM</span>
           ) : null}
         </div>
       </header>
@@ -61,15 +99,10 @@ export function Restaurants() {
         <div className="text-[11px] font-extrabold text-ocean-700 mb-2">דירוג מינימלי</div>
         <div className="flex gap-1.5">
           {[4.0, 4.3, 4.5].map(r => (
-            <button
-              key={r}
-              onClick={() => setMinRating(r)}
+            <button key={r} onClick={() => setMinRating(r)}
               className={`rounded-full px-3 py-1.5 text-[12px] font-bold transition-colors ${
-                minRating === r
-                  ? 'bg-amber-400 text-white'
-                  : 'bg-white border border-ocean-100 text-ocean-700 hover:border-amber-300'
-              }`}
-            >
+                minRating === r ? 'bg-amber-400 text-white' : 'bg-white border border-ocean-100 text-ocean-700 hover:border-amber-300'
+              }`}>
               ★ {r}+
             </button>
           ))}
@@ -81,15 +114,10 @@ export function Restaurants() {
         <div className="text-[11px] font-extrabold text-ocean-700 mb-2">סנן לפי מטבח</div>
         <div className="flex flex-wrap gap-1.5">
           {CUISINES.map(c => (
-            <button
-              key={c}
-              onClick={() => setActiveCuisine(prev => prev === c ? null : c)}
+            <button key={c} onClick={() => setActiveCuisine(prev => prev === c ? null : c)}
               className={`rounded-full px-3 py-1.5 text-[12px] font-bold transition-colors ${
-                activeCuisine === c
-                  ? 'bg-ocean-700 text-white'
-                  : 'bg-white border border-ocean-100 text-ocean-700 hover:border-ocean-300'
-              }`}
-            >
+                activeCuisine === c ? 'bg-ocean-700 text-white' : 'bg-white border border-ocean-100 text-ocean-700 hover:border-ocean-300'
+              }`}>
               {CUISINE_ICONS[c]} {c}
             </button>
           ))}
@@ -101,63 +129,42 @@ export function Restaurants() {
         <div className="text-[11px] font-extrabold text-ocean-700 mb-2">סנן לפי אזור</div>
         <div className="flex gap-1.5">
           {regions.map(r => (
-            <button
-              key={r}
-              onClick={() => setActiveRegion(prev => prev === r ? null : r)}
+            <button key={r} onClick={() => setActiveRegion(prev => prev === r ? null : r)}
               className={`rounded-full px-3 py-1.5 text-[12px] font-bold transition-colors ${
-                activeRegion === r
-                  ? 'bg-sunset-500 text-white'
-                  : 'bg-white border border-ocean-100 text-ocean-700 hover:border-ocean-300'
-              }`}
-            >
+                activeRegion === r ? 'bg-sunset-500 text-white' : 'bg-white border border-ocean-100 text-ocean-700 hover:border-ocean-300'
+              }`}>
               {REGION_ICONS[r]} {r}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Restaurant cards */}
-      {filtered.length === 0 ? (
+      {/* Rated results */}
+      {rated.length === 0 ? (
         <div className="rounded-2xl bg-white border border-ocean-100 p-8 text-center text-zinc-400 text-[13px]">
           לא נמצאו מסעדות בסינון זה
         </div>
       ) : (
         <div className="space-y-2">
-          {filtered.map(r => (
-            <a
-              key={`${r.source}-${r.name}`}
-              href={r.mapsUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-start gap-3 rounded-2xl bg-white border border-ocean-100 px-4 py-3 hover:border-ocean-300 active:bg-ocean-50 transition-colors"
-            >
-              <div className="text-2xl leading-none mt-0.5 flex-shrink-0">
-                {CUISINE_ICONS[r.cuisine] ?? '🍽️'}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <div className="text-[14px] font-extrabold text-ocean-700 leading-tight">{r.name}</div>
-                  {r.source === 'osm' && (
-                    <span className="text-[9px] bg-emerald-50 text-emerald-600 font-bold rounded-full px-1.5 py-0.5 flex-shrink-0">OSM</span>
-                  )}
-                </div>
-                {r.rating > 0 && (
-                  <div className="mt-0.5">
-                    <Stars rating={r.rating} />
-                  </div>
-                )}
-                <div className="text-[11px] text-zinc-500 mt-0.5">{r.description}</div>
-                <div className="flex items-center gap-2 mt-1.5">
-                  <span className="text-[10px] font-bold bg-ocean-50 text-ocean-700 rounded-full px-2 py-0.5">{r.cuisine}</span>
-                  {r.region !== 'OSM' && (
-                    <span className="text-[10px] text-zinc-400">{REGION_ICONS[r.region]} {r.region}</span>
-                  )}
-                  <span className="text-[10px] font-bold text-emerald-600">{PRICE[r.priceLevel]}</span>
-                </div>
-              </div>
-              <span className="text-ocean-400 text-[18px] flex-shrink-0 mt-1">›</span>
-            </a>
-          ))}
+          {rated.map(r => <RestaurantCard key={`${r.source}-${r.name}`} r={r} />)}
+        </div>
+      )}
+
+      {/* Unrated OSM section */}
+      {unrated.length > 0 && (
+        <div>
+          <button
+            onClick={() => setShowUnrated(v => !v)}
+            className="w-full flex items-center justify-between rounded-2xl bg-zinc-50 border border-zinc-100 px-4 py-3 text-[12px] font-bold text-zinc-600"
+          >
+            <span>🗺️ מסעדות נוספות מ-OpenStreetMap ({unrated.length})</span>
+            <span>{showUnrated ? '▴' : '▾'}</span>
+          </button>
+          {showUnrated && (
+            <div className="space-y-2 mt-2">
+              {unrated.map(r => <RestaurantCard key={`${r.source}-${r.name}`} r={r} />)}
+            </div>
+          )}
         </div>
       )}
 
