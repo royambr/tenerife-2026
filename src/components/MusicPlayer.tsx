@@ -31,7 +31,7 @@ interface MusicCtx {
 }
 
 const MusicContext = createContext<MusicCtx>({
-  playing: false, muted: true, ready: false,
+  playing: false, muted: false, ready: false,
   togglePlay: () => {}, toggleMute: () => {},
 });
 
@@ -39,7 +39,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YTPlayer | null>(null);
   const [playing, setPlaying] = useState(false);
-  const [muted, setMuted] = useState(true);
+  const [muted, setMuted] = useState(false);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -54,9 +54,12 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         },
         events: {
           onReady: (e: { target: YTPlayer }) => {
+            e.target.unMute();
+            e.target.setVolume(80);
             e.target.playVideo();
             setReady(true);
             setPlaying(true);
+            setMuted(false);
           },
           onStateChange: (e: { data: number }) => {
             if (e.data === 0) playerRef.current?.playVideo();
