@@ -2,12 +2,13 @@ import React from 'react';
 import type { Tab } from './BottomNav';
 
 const ITEMS: { id: Tab; label: string; icon: string; hint: string }[] = [
-  { id: 'today',    label: 'היום',     icon: '☀️', hint: 'מה קורה עכשיו' },
-  { id: 'schedule', label: 'לו״ז',    icon: '📅', hint: '8 ימים מלאים' },
-  { id: 'plans',    label: 'אפשרויות', icon: '✨', hint: '3 סגנונות טיול' },
-  { id: 'map',      label: 'מפה',      icon: '🗺️', hint: 'לפי אזורי האי' },
-  { id: 'events',   label: 'אירועים',  icon: '🎉', hint: 'אירועים בטנריף' },
-  { id: 'manage',   label: 'ניהול',    icon: '🧰', hint: 'צ׳ק-ליסט והזמנות' },
+  { id: 'today',       label: 'היום',     icon: '☀️', hint: 'מה קורה עכשיו' },
+  { id: 'schedule',    label: 'לו״ז',    icon: '📅', hint: '8 ימים מלאים' },
+  { id: 'plans',       label: 'אפשרויות', icon: '✨', hint: '3 סגנונות טיול' },
+  { id: 'map',         label: 'מפה',      icon: '🗺️', hint: 'לפי אזורי האי' },
+  { id: 'restaurants', label: 'מסעדות',   icon: '🍽️', hint: 'מסעדות מומלצות' },
+  { id: 'events',      label: 'אירועים',  icon: '🎉', hint: 'אירועים בטנריף' },
+  { id: 'manage',      label: 'ניהול',    icon: '🧰', hint: 'צ׳ק-ליסט והזמנות' },
 ];
 
 export function SideNav({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => void }) {

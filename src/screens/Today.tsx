@@ -20,7 +20,6 @@ import { TripCountdown } from '../components/TripCountdown';
 import { ActivitySpinner } from '../components/ActivitySpinner';
 import { FunFact } from '../components/FunFact';
 import { Phrasebook } from '../components/Phrasebook';
-import { RestaurantList } from '../components/RestaurantList';
 import { LiveWeather } from '../components/LiveWeather';
 import { REGION_CENTERS, haversineKm } from '../data/regions';
 
@@ -368,7 +367,6 @@ export function Today() {
       </div>
 
       <FunFact />
-      <RestaurantList />
       <Phrasebook />
 
       <ActivitySheet activity={sel} open={!!sel} onClose={() => setSel(null)} onReplace={(a) => { setSel(null); setAltFor(a); }} />
