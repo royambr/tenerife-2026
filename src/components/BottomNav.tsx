@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type Tab = 'today' | 'schedule' | 'plans' | 'map' | 'manage' | 'events' | 'restaurants';
+export type Tab = 'today' | 'schedule' | 'plans' | 'map' | 'manage' | 'events' | 'restaurants' | 'phrasebook';
 
 const ITEMS: { id: Tab; label: string; icon: string }[] = [
   { id: 'manage',      label: 'ניהול',    icon: '🧰' },
@@ -10,6 +10,7 @@ const ITEMS: { id: Tab; label: string; icon: string }[] = [
   { id: 'map',         label: 'מפה',      icon: '🗺️' },
   { id: 'restaurants', label: 'מסעדות',   icon: '🍽️' },
   { id: 'events',      label: 'אירועים',  icon: '🎉' },
+  { id: 'phrasebook',  label: 'ספרדית',   icon: '🗣️' },
 ];
 
 export function BottomNav({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => void }) {
@@ -18,7 +19,7 @@ export function BottomNav({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => v
       dir="rtl"
       className="fixed bottom-0 inset-x-0 z-30 mx-auto max-w-md px-3 pb-[max(env(safe-area-inset-bottom),10px)] pt-2"
     >
-      <div className="rounded-3xl bg-white/95 backdrop-blur shadow-card border border-ocean-100 grid grid-cols-7">
+      <div className="rounded-3xl bg-white/95 backdrop-blur shadow-card border border-ocean-100 grid grid-cols-8">
         {ITEMS.map(item => {
           const active = tab === item.id;
           return (

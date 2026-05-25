@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useStore, store, _internalToast } from '../store';
-import { Phrasebook } from '../components/Phrasebook';
 import { Chip } from '../components/Chip';
 import { Sheet } from '../components/Sheet';
 import type { ChecklistItem, Decision, FeedbackEntry, Participant } from '../data/types';
@@ -37,8 +36,6 @@ export function Manage() {
         </div>
         <Chip tone="emerald">💶 ~€{tripCostForParticipant(activities, currentId, participants.map(p => p.id))} לאיש לטיול</Chip>
       </header>
-
-      <Phrasebook />
 
       {/* Participant switcher */}
       <div className="rounded-2xl bg-white border border-ocean-100 p-3 lg:col-span-full">

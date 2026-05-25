@@ -11,7 +11,8 @@ interface OSMResponse {
   elements: OSMNode[];
 }
 
-const TENERIFE_BBOX = '27.9,-16.93,28.6,-16.1';
+const TENERIFE_BBOX = '27.97,-16.93,28.56,-16.11';
+const LAT_MIN = 27.97, LAT_MAX = 28.56, LON_MIN = -16.93, LON_MAX = -16.11;
 
 const CUISINE_MAP: Record<string, string> = {
   seafood: 'פירות ים', fish: 'פירות ים', mariscos: 'פירות ים',
@@ -57,6 +58,7 @@ export async function fetchOSMRestaurants(): Promise<Restaurant[]> {
 
   return data.elements
     .filter(n => n.tags?.name)
+    .filter(n => n.lat >= LAT_MIN && n.lat <= LAT_MAX && n.lon >= LON_MIN && n.lon <= LON_MAX)
     .map(n => {
       const name = n.tags.name;
       const staticRating = matchStaticRating(name);

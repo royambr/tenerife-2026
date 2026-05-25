@@ -113,28 +113,25 @@ export function Today() {
   return (
     <div className="p-4 pb-2 space-y-3.5 animate-fade-up lg:max-w-5xl">
       <LiveWeather />
-      <div className="flex gap-2 items-stretch">
-        <div className="flex-1 min-w-0"><FunFact /></div>
-        <div className="flex-shrink-0 w-auto"><TripCountdown /></div>
-      </div>
-      {/* compact header */}
-      <header className="flex items-center justify-between">
-        <div className="min-w-0">
-          <div className="text-[11px] font-bold text-sunset-700">יום {dayIdx + 1} · {fmtDateShort(activeDate)}</div>
-          <h1 className="text-[20px] font-extrabold text-ocean-700 leading-tight truncate">{day.title}</h1>
-        </div>
-        <div className="flex items-center gap-1.5">
-          {todayWeather && (
-            <span className="text-[11px] font-extrabold px-2.5 py-1.5 rounded-full bg-white border border-ocean-100 text-ocean-700 inline-flex items-center gap-1">
-              {weatherEmoji(todayWeather.code, todayWeather.rain)} {todayWeather.tMax}°
-              {todayWeather.rain >= 30 && <span className="text-sunset-700">· {todayWeather.rain}%</span>}
+      {/* 3-column: FunFact (right) | Title (center) | Countdown (left) — RTL order */}
+      <div className="grid grid-cols-3 gap-2 items-stretch">
+        <FunFact />
+        <div className="rounded-2xl bg-white border border-ocean-100 p-2.5 flex flex-col items-center justify-center text-center">
+          <div className="text-[10px] font-bold text-sunset-700">יום {dayIdx + 1} · {fmtDateShort(activeDate)}</div>
+          <h1 className="text-[14px] font-extrabold text-ocean-700 leading-tight mt-0.5">{day.title}</h1>
+          <div className="flex items-center gap-1 mt-1.5 flex-wrap justify-center">
+            {todayWeather && (
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-ocean-50 text-ocean-700">
+                {weatherEmoji(todayWeather.code, todayWeather.rain)} {todayWeather.tMax}°{todayWeather.rain >= 30 ? ` · ${todayWeather.rain}%` : ''}
+              </span>
+            )}
+            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white bg-gradient-to-bl ${INTENSITY_COLORS[day.intensity]}`}>
+              {day.intensity}
             </span>
-          )}
-          <span className={`text-[11px] font-extrabold px-3 py-1.5 rounded-full text-white bg-gradient-to-bl ${INTENSITY_COLORS[day.intensity]}`}>
-            {day.intensity}
-          </span>
+          </div>
         </div>
-      </header>
+        <TripCountdown />
+      </div>
 
       {/* Labeled chips row — explicit context, no bare numbers */}
       <div className="flex flex-wrap gap-1.5">
