@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { RESTAURANTS, CUISINES } from '../data/restaurants';
+import { CUISINES } from '../data/restaurants';
+import { useRestaurants } from '../hooks/useRestaurants';
 
 const PRICE = ['', '€', '€€', '€€€'] as const;
 const REGION_ICONS: Record<string, string> = { 'צפון': '🌿', 'דרום': '☀️', 'מרכז': '🏔️' };
@@ -21,13 +22,14 @@ function Stars({ rating }: { rating: number }) {
 }
 
 export function Restaurants() {
+  const { restaurants, loading, osmCount } = useRestaurants();
   const [activeCuisine, setActiveCuisine] = useState<string | null>(null);
   const [activeRegion, setActiveRegion] = useState<string | null>(null);
   const [minRating, setMinRating] = useState(4.0);
 
   const regions = ['צפון', 'דרום', 'מרכז'];
 
-  const filtered = RESTAURANTS.filter(r => {
+  const filtered = restaurants.filter(r => {
     if (r.rating < minRating) return false;
     if (activeCuisine && r.cuisine !== activeCuisine) return false;
     if (activeRegion && r.region !== activeRegion) return false;
@@ -38,9 +40,20 @@ export function Restaurants() {
     <div className="p-4 pb-24 space-y-4 animate-fade-up lg:max-w-5xl">
       <header>
         <h1 className="text-[22px] font-extrabold text-ocean-700">🍽️ מסעדות מומלצות</h1>
-        <p className="text-[12px] text-zinc-500 mt-0.5">
-          {filtered.length} מסעדות · טנריף 2026
-        </p>
+        <div className="flex items-center gap-2 mt-0.5">
+          <p className="text-[12px] text-zinc-500">
+            {filtered.length} מסעדות · טנריף 2026
+          </p>
+          {loading ? (
+            <span className="text-[10px] bg-zinc-100 text-zinc-400 rounded-full px-2 py-0.5">
+              טוען מ-OpenStreetMap...
+            </span>
+          ) : osmCount > 0 ? (
+            <span className="text-[10px] bg-emerald-50 text-emerald-600 font-bold rounded-full px-2 py-0.5">
+              ✓ {osmCount} מ-OpenStreetMap
+            </span>
+          ) : null}
+        </div>
       </header>
 
       {/* Rating filter */}
@@ -112,7 +125,7 @@ export function Restaurants() {
         <div className="space-y-2">
           {filtered.map(r => (
             <a
-              key={r.name}
+              key={`${r.source}-${r.name}`}
               href={r.mapsUrl}
               target="_blank"
               rel="noreferrer"
@@ -122,14 +135,23 @@ export function Restaurants() {
                 {CUISINE_ICONS[r.cuisine] ?? '🍽️'}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-[14px] font-extrabold text-ocean-700 leading-tight">{r.name}</div>
-                <div className="mt-0.5">
-                  <Stars rating={r.rating} />
+                <div className="flex items-center gap-1.5">
+                  <div className="text-[14px] font-extrabold text-ocean-700 leading-tight">{r.name}</div>
+                  {r.source === 'osm' && (
+                    <span className="text-[9px] bg-emerald-50 text-emerald-600 font-bold rounded-full px-1.5 py-0.5 flex-shrink-0">OSM</span>
+                  )}
                 </div>
+                {r.rating > 0 && (
+                  <div className="mt-0.5">
+                    <Stars rating={r.rating} />
+                  </div>
+                )}
                 <div className="text-[11px] text-zinc-500 mt-0.5">{r.description}</div>
                 <div className="flex items-center gap-2 mt-1.5">
                   <span className="text-[10px] font-bold bg-ocean-50 text-ocean-700 rounded-full px-2 py-0.5">{r.cuisine}</span>
-                  <span className="text-[10px] text-zinc-400">{REGION_ICONS[r.region]} {r.region}</span>
+                  {r.region !== 'OSM' && (
+                    <span className="text-[10px] text-zinc-400">{REGION_ICONS[r.region]} {r.region}</span>
+                  )}
                   <span className="text-[10px] font-bold text-emerald-600">{PRICE[r.priceLevel]}</span>
                 </div>
               </div>
