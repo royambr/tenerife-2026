@@ -4,7 +4,7 @@ const TRIP_START = '2026-06-17';
 const TRIP_END   = '2026-06-24';
 const DATES = ['2026-06-17','2026-06-18','2026-06-19','2026-06-20','2026-06-21','2026-06-22','2026-06-23','2026-06-24'];
 
-const CARD = 'rounded-2xl bg-ocean-700 px-3 py-3 flex flex-col items-center justify-center text-center h-full';
+const CARD = 'rounded-2xl bg-ocean-500 px-3 py-3 flex flex-col items-center justify-center text-center h-full';
 
 function canaryToday(): string {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'Atlantic/Canary' });

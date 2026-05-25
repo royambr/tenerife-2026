@@ -36,7 +36,7 @@ export function FunFact() {
   }, []);
 
   return (
-    <div className="rounded-2xl bg-ocean-700 p-3 h-full flex flex-col">
+    <div className="rounded-2xl bg-ocean-500 p-3 h-full flex flex-col">
       <div className="flex items-center justify-between mb-1.5">
         <span className="text-[11px] font-extrabold text-white/80">💡 Fun Fact</span>
         <button onClick={next} className="text-[10px] text-white/50 hover:text-white/80">↻ עוד</button>

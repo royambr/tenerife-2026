@@ -116,7 +116,7 @@ export function Today() {
       {/* 3-column: Countdown (right) | Title (center) | FunFact (left) — RTL order */}
       <div className="grid grid-cols-3 gap-2 items-stretch">
         <TripCountdown />
-        <div className="rounded-2xl bg-ocean-700 p-2.5 flex flex-col items-center justify-center text-center">
+        <div className="rounded-2xl bg-ocean-500 p-2.5 flex flex-col items-center justify-center text-center">
           <div className="text-[10px] font-bold text-white/60">יום {dayIdx + 1} · {fmtDateShort(activeDate)}</div>
           <h1 className="text-[14px] font-extrabold text-white leading-tight mt-0.5">{day.title}</h1>
           <div className="flex items-center gap-1 mt-1.5 flex-wrap justify-center">
