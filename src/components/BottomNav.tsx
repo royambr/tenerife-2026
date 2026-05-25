@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type Tab = 'today' | 'schedule' | 'plans' | 'map' | 'manage' | 'events' | 'restaurants' | 'phrasebook';
+export type Tab = 'today' | 'schedule' | 'plans' | 'map' | 'manage' | 'events' | 'restaurants' | 'phrasebook' | 'feedback';
 
 const ITEMS: { id: Tab; label: string; icon: string }[] = [
   { id: 'manage',      label: 'ניהול',    icon: '🧰' },
@@ -10,7 +10,7 @@ const ITEMS: { id: Tab; label: string; icon: string }[] = [
   { id: 'map',         label: 'מפה',      icon: '🗺️' },
   { id: 'restaurants', label: 'מסעדות',   icon: '🍽️' },
   { id: 'events',      label: 'אירועים',  icon: '🎉' },
-  { id: 'phrasebook',  label: 'ספרדית',   icon: '🗣️' },
+  { id: 'feedback',    label: 'פידבק',    icon: '💬' },
 ];
 
 export function BottomNav({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => void }) {

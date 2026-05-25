@@ -9,6 +9,7 @@ import { Manage } from './screens/Manage';
 import { Events } from './screens/Events';
 import { Restaurants } from './screens/Restaurants';
 import { Phrasebook } from './components/Phrasebook';
+import { FeedbackLog } from './screens/FeedbackLog';
 import { useStore, useEditMode, editStore } from './store';
 import { ToastHost } from './components/ToastHost';
 import { FeedbackFab } from './components/FeedbackSheet';
@@ -55,6 +56,7 @@ export default function App() {
               {tab === 'restaurants' && <Restaurants />}
               {tab === 'manage'      && <Manage />}
               {tab === 'phrasebook'  && <div className="p-4 pb-2 animate-fade-up"><Phrasebook /></div>}
+              {tab === 'feedback'    && <FeedbackLog />}
             </div>
           </div>
         </main>
