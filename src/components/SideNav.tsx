@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Tab } from './BottomNav';
+import { MusicControls } from './MusicPlayer';
 
 const ITEMS: { id: Tab; label: string; icon: string; hint: string }[] = [
   { id: 'today',       label: 'היום',     icon: '☀️', hint: 'מה קורה עכשיו' },
@@ -15,9 +16,12 @@ const ITEMS: { id: Tab; label: string; icon: string; hint: string }[] = [
 export function SideNav({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => void }) {
   return (
     <nav className="rounded-3xl bg-white shadow-card border border-ocean-100/60 p-3">
-      <div className="px-3 py-2 mb-1">
-        <div className="text-[11px] font-bold text-sunset-700">TENERIFE · 2026</div>
-        <div className="text-lg font-extrabold text-ocean-700 leading-tight">הפרלמנט בטנריף</div>
+      <div className="px-3 py-2 mb-1 flex items-center justify-between">
+        <div>
+          <div className="text-[11px] font-bold text-sunset-700">TENERIFE · 2026</div>
+          <div className="text-lg font-extrabold text-ocean-700 leading-tight">הפרלמנט בטנריף</div>
+        </div>
+        <MusicControls className="bg-ocean-50 rounded-full px-2.5 py-1.5" />
       </div>
       <div className="space-y-1">
         {ITEMS.map(item => {

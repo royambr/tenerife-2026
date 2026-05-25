@@ -36,12 +36,12 @@ export function FunFact() {
   }, []);
 
   return (
-    <div className="rounded-2xl bg-white border border-ocean-100 p-3">
+    <div className="rounded-2xl bg-ocean-700 p-3 h-full flex flex-col">
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[11px] font-extrabold text-ocean-700">💡 Fun Fact — טנריף</span>
-        <button onClick={next} className="text-[10px] text-zinc-400 hover:text-ocean-600">↻ עוד</button>
+        <span className="text-[11px] font-extrabold text-white/80">💡 Fun Fact</span>
+        <button onClick={next} className="text-[10px] text-white/50 hover:text-white/80">↻ עוד</button>
       </div>
-      <p className="text-[12px] text-zinc-600 leading-5">{TENERIFE_FACTS[index]}</p>
+      <p className="text-[12px] text-white/90 leading-5 flex-1">{TENERIFE_FACTS[index]}</p>
     </div>
   );
 }

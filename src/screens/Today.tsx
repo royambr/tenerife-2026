@@ -116,12 +116,12 @@ export function Today() {
       {/* 3-column: Countdown (right) | Title (center) | FunFact (left) — RTL order */}
       <div className="grid grid-cols-3 gap-2 items-stretch">
         <TripCountdown />
-        <div className="rounded-2xl bg-white border border-ocean-100 p-2.5 flex flex-col items-center justify-center text-center">
-          <div className="text-[10px] font-bold text-sunset-700">יום {dayIdx + 1} · {fmtDateShort(activeDate)}</div>
-          <h1 className="text-[14px] font-extrabold text-ocean-700 leading-tight mt-0.5">{day.title}</h1>
+        <div className="rounded-2xl bg-ocean-700 p-2.5 flex flex-col items-center justify-center text-center">
+          <div className="text-[10px] font-bold text-white/60">יום {dayIdx + 1} · {fmtDateShort(activeDate)}</div>
+          <h1 className="text-[14px] font-extrabold text-white leading-tight mt-0.5">{day.title}</h1>
           <div className="flex items-center gap-1 mt-1.5 flex-wrap justify-center">
             {todayWeather && (
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-ocean-50 text-ocean-700">
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-white/15 text-white">
                 {weatherEmoji(todayWeather.code, todayWeather.rain)} {todayWeather.tMax}°{todayWeather.rain >= 30 ? ` · ${todayWeather.rain}%` : ''}
               </span>
             )}

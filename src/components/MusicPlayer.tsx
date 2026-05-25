@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 
 declare global {
   interface Window {
@@ -22,7 +22,20 @@ interface YTPlayer {
 
 const VIDEO_ID = 'J2WP-55FLNk';
 
-export function MusicPlayer() {
+interface MusicCtx {
+  playing: boolean;
+  muted: boolean;
+  ready: boolean;
+  togglePlay(): void;
+  toggleMute(): void;
+}
+
+const MusicContext = createContext<MusicCtx>({
+  playing: false, muted: true, ready: false,
+  togglePlay: () => {}, toggleMute: () => {},
+});
+
+export function MusicProvider({ children }: { children: React.ReactNode }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YTPlayer | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -35,15 +48,9 @@ export function MusicPlayer() {
       playerRef.current = new window.YT.Player(containerRef.current, {
         videoId: VIDEO_ID,
         playerVars: {
-          autoplay: 1,
-          loop: 1,
-          playlist: VIDEO_ID,
-          controls: 0,
-          disablekb: 1,
-          fs: 0,
-          modestbranding: 1,
-          rel: 0,
-          mute: 1,
+          autoplay: 1, loop: 1, playlist: VIDEO_ID,
+          controls: 0, disablekb: 1, fs: 0,
+          modestbranding: 1, rel: 0, mute: 1,
         },
         events: {
           onReady: (e: { target: YTPlayer }) => {
@@ -52,10 +59,7 @@ export function MusicPlayer() {
             setPlaying(true);
           },
           onStateChange: (e: { data: number }) => {
-            if (e.data === 0) {
-              // ENDED — loop fallback
-              playerRef.current?.playVideo();
-            }
+            if (e.data === 0) playerRef.current?.playVideo();
             setPlaying(e.data === 1);
           },
         },
@@ -74,21 +78,13 @@ export function MusicPlayer() {
       }
     }
 
-    return () => {
-      playerRef.current?.destroy();
-    };
+    return () => { playerRef.current?.destroy(); };
   }, []);
 
   function toggleMute() {
     if (!playerRef.current) return;
-    if (muted) {
-      playerRef.current.unMute();
-      playerRef.current.setVolume(80);
-      setMuted(false);
-    } else {
-      playerRef.current.mute();
-      setMuted(true);
-    }
+    if (muted) { playerRef.current.unMute(); playerRef.current.setVolume(80); setMuted(false); }
+    else { playerRef.current.mute(); setMuted(true); }
   }
 
   function togglePlay() {
@@ -97,33 +93,45 @@ export function MusicPlayer() {
   }
 
   return (
-    <div className="fixed bottom-20 left-3 z-50 lg:bottom-6 lg:left-6" dir="ltr">
-      {/* Hidden YouTube player */}
-      <div
-        ref={containerRef}
-        style={{ width: 1, height: 1, position: 'absolute', opacity: 0, pointerEvents: 'none' }}
-      />
+    <MusicContext.Provider value={{ playing, muted, ready, togglePlay, toggleMute }}>
+      <div ref={containerRef} style={{ width: 1, height: 1, position: 'fixed', opacity: 0, pointerEvents: 'none', bottom: 0, left: 0 }} />
+      {children}
+    </MusicContext.Provider>
+  );
+}
 
-      {/* Floating controls */}
+export function MusicControls({ className = '' }: { className?: string }) {
+  const { playing, muted, ready, togglePlay, toggleMute } = useContext(MusicContext);
+  return (
+    <div className={`flex items-center gap-1.5 ${className}`} dir="ltr">
+      <button
+        onClick={togglePlay}
+        disabled={!ready}
+        className="text-[14px] leading-none text-ocean-700 disabled:opacity-30"
+        aria-label={playing ? 'pause' : 'play'}
+      >
+        {playing ? '⏸' : '▶'}
+      </button>
+      <span className="text-[11px] font-bold text-ocean-700 opacity-60">♫</span>
+      <button
+        onClick={toggleMute}
+        disabled={!ready}
+        className={`text-[13px] leading-none disabled:opacity-30 ${muted ? 'opacity-40' : 'text-ocean-700'}`}
+        aria-label={muted ? 'unmute' : 'mute'}
+        title={muted ? 'הפעל צליל' : 'השתק'}
+      >
+        {muted ? '🔇' : '🔊'}
+      </button>
+    </div>
+  );
+}
+
+// Floating button — mobile only
+export function MusicPlayer() {
+  return (
+    <div className="fixed bottom-20 left-3 z-50 lg:hidden" dir="ltr">
       <div className="flex items-center gap-1.5 bg-white border border-ocean-100 shadow-card rounded-full px-3 py-2">
-        <button
-          onClick={togglePlay}
-          disabled={!ready}
-          className="text-[14px] leading-none text-ocean-700 disabled:opacity-30"
-          aria-label={playing ? 'pause' : 'play'}
-        >
-          {playing ? '⏸' : '▶'}
-        </button>
-        <span className="text-[11px] font-bold text-ocean-700 opacity-60">♫</span>
-        <button
-          onClick={toggleMute}
-          disabled={!ready}
-          className={`text-[13px] leading-none disabled:opacity-30 ${muted ? 'opacity-40' : 'text-ocean-700'}`}
-          aria-label={muted ? 'unmute' : 'mute'}
-          title={muted ? 'הפעל צליל' : 'השתק'}
-        >
-          {muted ? '🔇' : '🔊'}
-        </button>
+        <MusicControls />
       </div>
     </div>
   );

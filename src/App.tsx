@@ -13,7 +13,7 @@ import { useStore, useEditMode, editStore } from './store';
 import { ToastHost } from './components/ToastHost';
 import { FeedbackFab } from './components/FeedbackSheet';
 import { WelcomeScreen } from './components/WelcomeScreen';
-import { MusicPlayer } from './components/MusicPlayer';
+import { MusicProvider, MusicPlayer } from './components/MusicPlayer';
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('today');
@@ -21,6 +21,7 @@ export default function App() {
   const edit = useEditMode();
 
   return (
+    <MusicProvider>
     <div dir="rtl" className={`min-h-screen text-ocean-700 ${edit ? 'pt-10' : ''}`}>
       <WelcomeScreen onEnter={() => {}} />
       {edit && (
@@ -67,5 +68,6 @@ export default function App() {
       <FeedbackFab activeTab={tab} />
       <ToastHost />
     </div>
+    </MusicProvider>
   );
 }
