@@ -113,9 +113,9 @@ export function Today() {
   return (
     <div className="p-4 pb-2 space-y-3.5 animate-fade-up lg:max-w-5xl">
       <LiveWeather />
-      {/* 3-column: FunFact (right) | Title (center) | Countdown (left) — RTL order */}
+      {/* 3-column: Countdown (right) | Title (center) | FunFact (left) — RTL order */}
       <div className="grid grid-cols-3 gap-2 items-stretch">
-        <FunFact />
+        <TripCountdown />
         <div className="rounded-2xl bg-white border border-ocean-100 p-2.5 flex flex-col items-center justify-center text-center">
           <div className="text-[10px] font-bold text-sunset-700">יום {dayIdx + 1} · {fmtDateShort(activeDate)}</div>
           <h1 className="text-[14px] font-extrabold text-ocean-700 leading-tight mt-0.5">{day.title}</h1>
@@ -130,7 +130,7 @@ export function Today() {
             </span>
           </div>
         </div>
-        <TripCountdown />
+        <FunFact />
       </div>
 
       {/* Labeled chips row — explicit context, no bare numbers */}

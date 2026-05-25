@@ -65,6 +65,11 @@ export async function fetchOSMRestaurants(): Promise<Restaurant[]> {
       const osmRating = n.tags['stars'] ? parseFloat(n.tags['stars']) :
                         n.tags['rating'] ? parseFloat(n.tags['rating']) : null;
       const rating = staticRating ?? osmRating ?? 0;
+      const hours = n.tags['opening_hours'] ?? '';
+      const hasBreakfast = /0[6-9]:|10:|11:/.test(hours) || /breakfast/i.test(hours);
+      const meals: ('breakfast' | 'lunch' | 'dinner')[] = hasBreakfast
+        ? ['breakfast', 'lunch', 'dinner']
+        : ['lunch', 'dinner'];
       return {
         name,
         cuisine: mapCuisine(n.tags.cuisine),
@@ -73,6 +78,7 @@ export async function fetchOSMRestaurants(): Promise<Restaurant[]> {
         description: n.tags['description'] ?? n.tags['cuisine'] ?? 'מסעדה מ-OpenStreetMap',
         mapsUrl: buildMapsUrl(name, n.lat, n.lon),
         rating,
+        meals,
       };
     });
 }

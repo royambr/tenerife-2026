@@ -8,6 +8,11 @@ const CUISINE_ICONS: Record<string, string> = {
   'פירות ים': '🦐', 'בשרים': '🥩', 'טפאס': '🫒',
   'וגן': '🥗', 'ים-תיכוני': '🫙', 'בינלאומי': '🌍', 'ספרדי': '🍽️',
 };
+const MEAL_LABELS: Record<string, { label: string; icon: string }> = {
+  breakfast: { label: 'בוקר',   icon: '🌅' },
+  lunch:     { label: 'צהריים', icon: '☀️' },
+  dinner:    { label: 'ערב',    icon: '🌙' },
+};
 
 function Stars({ rating }: { rating: number }) {
   const full = Math.floor(rating);
@@ -21,10 +26,21 @@ function Stars({ rating }: { rating: number }) {
   );
 }
 
+function MealBadges({ meals }: { meals: string[] }) {
+  return (
+    <div className="flex gap-1">
+      {meals.map(m => (
+        <span key={m} className="text-[9px] bg-sand-50 text-sand-700 border border-sand-200 rounded-full px-1.5 py-0.5 font-semibold">
+          {MEAL_LABELS[m]?.icon} {MEAL_LABELS[m]?.label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function RestaurantCard({ r }: { r: EnrichedRestaurant }) {
   return (
     <a
-      key={`${r.source}-${r.name}`}
       href={r.mapsUrl}
       target="_blank"
       rel="noreferrer"
@@ -34,7 +50,7 @@ function RestaurantCard({ r }: { r: EnrichedRestaurant }) {
         {CUISINE_ICONS[r.cuisine] ?? '🍽️'}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <div className="text-[14px] font-extrabold text-ocean-700 leading-tight">{r.name}</div>
           {r.source === 'osm' && (
             <span className="text-[9px] bg-emerald-50 text-emerald-600 font-bold rounded-full px-1.5 py-0.5 flex-shrink-0">OSM</span>
@@ -42,12 +58,13 @@ function RestaurantCard({ r }: { r: EnrichedRestaurant }) {
         </div>
         {r.rating > 0 && <div className="mt-0.5"><Stars rating={r.rating} /></div>}
         <div className="text-[11px] text-zinc-500 mt-0.5">{r.description}</div>
-        <div className="flex items-center gap-2 mt-1.5">
+        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
           <span className="text-[10px] font-bold bg-ocean-50 text-ocean-700 rounded-full px-2 py-0.5">{r.cuisine}</span>
           {r.region !== 'OSM' && (
             <span className="text-[10px] text-zinc-400">{REGION_ICONS[r.region]} {r.region}</span>
           )}
           <span className="text-[10px] font-bold text-emerald-600">{PRICE[r.priceLevel]}</span>
+          <MealBadges meals={r.meals ?? []} />
         </div>
       </div>
       <span className="text-ocean-400 text-[18px] flex-shrink-0 mt-1">›</span>
@@ -59,6 +76,7 @@ export function Restaurants() {
   const { restaurants, loading, osmCount } = useRestaurants();
   const [activeCuisine, setActiveCuisine] = useState<string | null>(null);
   const [activeRegion, setActiveRegion] = useState<string | null>(null);
+  const [activeMeal, setActiveMeal] = useState<string | null>(null);
   const [minRating, setMinRating] = useState(4.0);
   const [showUnrated, setShowUnrated] = useState(false);
 
@@ -67,6 +85,7 @@ export function Restaurants() {
   const applyFilters = (r: EnrichedRestaurant) => {
     if (activeCuisine && r.cuisine !== activeCuisine) return false;
     if (activeRegion && r.region !== activeRegion) return false;
+    if (activeMeal && !(r.meals ?? []).includes(activeMeal as any)) return false;
     return true;
   };
 
@@ -84,7 +103,7 @@ export function Restaurants() {
         <h1 className="text-[22px] font-extrabold text-ocean-700">🍽️ מסעדות מומלצות</h1>
         <div className="flex items-center gap-2 mt-0.5">
           <p className="text-[12px] text-zinc-500">
-            {rated.length} מדורגות · {unrated.length} נוספות
+            {rated.length} מדורגות{unrated.length > 0 ? ` · ${unrated.length} נוספות` : ''}
           </p>
           {loading ? (
             <span className="text-[10px] bg-zinc-100 text-zinc-400 rounded-full px-2 py-0.5">טוען מ-OpenStreetMap...</span>
@@ -94,16 +113,16 @@ export function Restaurants() {
         </div>
       </header>
 
-      {/* Rating filter */}
+      {/* Meal filter */}
       <div>
-        <div className="text-[11px] font-extrabold text-ocean-700 mb-2">דירוג מינימלי</div>
+        <div className="text-[11px] font-extrabold text-ocean-700 mb-2">ארוחה</div>
         <div className="flex gap-1.5">
-          {[4.0, 4.3, 4.5].map(r => (
-            <button key={r} onClick={() => setMinRating(r)}
+          {Object.entries(MEAL_LABELS).map(([key, { label, icon }]) => (
+            <button key={key} onClick={() => setActiveMeal(prev => prev === key ? null : key)}
               className={`rounded-full px-3 py-1.5 text-[12px] font-bold transition-colors ${
-                minRating === r ? 'bg-amber-400 text-white' : 'bg-white border border-ocean-100 text-ocean-700 hover:border-amber-300'
+                activeMeal === key ? 'bg-sunset-500 text-white' : 'bg-white border border-ocean-100 text-ocean-700 hover:border-sunset-300'
               }`}>
-              ★ {r}+
+              {icon} {label}
             </button>
           ))}
         </div>
@@ -111,7 +130,7 @@ export function Restaurants() {
 
       {/* Cuisine filter */}
       <div>
-        <div className="text-[11px] font-extrabold text-ocean-700 mb-2">סנן לפי מטבח</div>
+        <div className="text-[11px] font-extrabold text-ocean-700 mb-2">מטבח</div>
         <div className="flex flex-wrap gap-1.5">
           {CUISINES.map(c => (
             <button key={c} onClick={() => setActiveCuisine(prev => prev === c ? null : c)}
@@ -124,22 +143,37 @@ export function Restaurants() {
         </div>
       </div>
 
-      {/* Region filter */}
-      <div>
-        <div className="text-[11px] font-extrabold text-ocean-700 mb-2">סנן לפי אזור</div>
-        <div className="flex gap-1.5">
-          {regions.map(r => (
-            <button key={r} onClick={() => setActiveRegion(prev => prev === r ? null : r)}
-              className={`rounded-full px-3 py-1.5 text-[12px] font-bold transition-colors ${
-                activeRegion === r ? 'bg-sunset-500 text-white' : 'bg-white border border-ocean-100 text-ocean-700 hover:border-ocean-300'
-              }`}>
-              {REGION_ICONS[r]} {r}
-            </button>
-          ))}
+      {/* Region + rating row */}
+      <div className="flex flex-wrap items-end gap-4">
+        <div>
+          <div className="text-[11px] font-extrabold text-ocean-700 mb-2">אזור</div>
+          <div className="flex gap-1.5">
+            {regions.map(r => (
+              <button key={r} onClick={() => setActiveRegion(prev => prev === r ? null : r)}
+                className={`rounded-full px-3 py-1.5 text-[12px] font-bold transition-colors ${
+                  activeRegion === r ? 'bg-ocean-500 text-white' : 'bg-white border border-ocean-100 text-ocean-700 hover:border-ocean-300'
+                }`}>
+                {REGION_ICONS[r]} {r}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <div className="text-[11px] font-extrabold text-ocean-700 mb-2">דירוג מינימלי</div>
+          <div className="flex gap-1.5">
+            {[4.0, 4.3, 4.5].map(r => (
+              <button key={r} onClick={() => setMinRating(r)}
+                className={`rounded-full px-3 py-1.5 text-[12px] font-bold transition-colors ${
+                  minRating === r ? 'bg-amber-400 text-white' : 'bg-white border border-ocean-100 text-ocean-700 hover:border-amber-300'
+                }`}>
+                ★ {r}+
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Rated results */}
+      {/* Results */}
       {rated.length === 0 ? (
         <div className="rounded-2xl bg-white border border-ocean-100 p-8 text-center text-zinc-400 text-[13px]">
           לא נמצאו מסעדות בסינון זה
