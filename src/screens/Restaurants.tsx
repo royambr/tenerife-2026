@@ -3,26 +3,36 @@ import { RESTAURANTS, CUISINES } from '../data/restaurants';
 
 const PRICE = ['', '€', '€€', '€€€'] as const;
 const REGION_ICONS: Record<string, string> = { 'צפון': '🌿', 'דרום': '☀️', 'מרכז': '🏔️' };
+const CUISINE_ICONS: Record<string, string> = {
+  'פירות ים': '🦐', 'בשרים': '🥩', 'טפאס': '🫒',
+  'וגן': '🥗', 'ים-תיכוני': '🫙', 'בינלאומי': '🌍', 'ספרדי': '🍽️',
+};
+
+function Stars({ rating }: { rating: number }) {
+  const full = Math.floor(rating);
+  const half = rating - full >= 0.5;
+  return (
+    <span className="text-[11px] text-amber-400 font-bold tracking-tight">
+      {'★'.repeat(full)}{half ? '½' : ''}
+      <span className="text-zinc-300">{'★'.repeat(5 - full - (half ? 1 : 0))}</span>
+      <span className="text-zinc-500 mr-1"> {rating.toFixed(1)}</span>
+    </span>
+  );
+}
 
 export function Restaurants() {
   const [activeCuisine, setActiveCuisine] = useState<string | null>(null);
   const [activeRegion, setActiveRegion] = useState<string | null>(null);
+  const [minRating, setMinRating] = useState(4.0);
 
   const regions = ['צפון', 'דרום', 'מרכז'];
 
   const filtered = RESTAURANTS.filter(r => {
+    if (r.rating < minRating) return false;
     if (activeCuisine && r.cuisine !== activeCuisine) return false;
     if (activeRegion && r.region !== activeRegion) return false;
     return true;
-  });
-
-  function toggleCuisine(c: string) {
-    setActiveCuisine(prev => prev === c ? null : c);
-  }
-
-  function toggleRegion(r: string) {
-    setActiveRegion(prev => prev === r ? null : r);
-  }
+  }).sort((a, b) => b.rating - a.rating);
 
   return (
     <div className="p-4 pb-24 space-y-4 animate-fade-up lg:max-w-5xl">
@@ -33,6 +43,26 @@ export function Restaurants() {
         </p>
       </header>
 
+      {/* Rating filter */}
+      <div>
+        <div className="text-[11px] font-extrabold text-ocean-700 mb-2">דירוג מינימלי</div>
+        <div className="flex gap-1.5">
+          {[4.0, 4.3, 4.5].map(r => (
+            <button
+              key={r}
+              onClick={() => setMinRating(r)}
+              className={`rounded-full px-3 py-1.5 text-[12px] font-bold transition-colors ${
+                minRating === r
+                  ? 'bg-amber-400 text-white'
+                  : 'bg-white border border-ocean-100 text-ocean-700 hover:border-amber-300'
+              }`}
+            >
+              ★ {r}+
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Cuisine filter */}
       <div>
         <div className="text-[11px] font-extrabold text-ocean-700 mb-2">סנן לפי מטבח</div>
@@ -40,14 +70,14 @@ export function Restaurants() {
           {CUISINES.map(c => (
             <button
               key={c}
-              onClick={() => toggleCuisine(c)}
+              onClick={() => setActiveCuisine(prev => prev === c ? null : c)}
               className={`rounded-full px-3 py-1.5 text-[12px] font-bold transition-colors ${
                 activeCuisine === c
                   ? 'bg-ocean-700 text-white'
                   : 'bg-white border border-ocean-100 text-ocean-700 hover:border-ocean-300'
               }`}
             >
-              {c}
+              {CUISINE_ICONS[c]} {c}
             </button>
           ))}
         </div>
@@ -60,7 +90,7 @@ export function Restaurants() {
           {regions.map(r => (
             <button
               key={r}
-              onClick={() => toggleRegion(r)}
+              onClick={() => setActiveRegion(prev => prev === r ? null : r)}
               className={`rounded-full px-3 py-1.5 text-[12px] font-bold transition-colors ${
                 activeRegion === r
                   ? 'bg-sunset-500 text-white'
@@ -89,15 +119,13 @@ export function Restaurants() {
               className="flex items-start gap-3 rounded-2xl bg-white border border-ocean-100 px-4 py-3 hover:border-ocean-300 active:bg-ocean-50 transition-colors"
             >
               <div className="text-2xl leading-none mt-0.5 flex-shrink-0">
-                {r.cuisine === 'פירות ים' ? '🦐' :
-                 r.cuisine === 'בשרים' ? '🥩' :
-                 r.cuisine === 'טפאס' ? '🫒' :
-                 r.cuisine === 'וגן' ? '🥗' :
-                 r.cuisine === 'ים-תיכוני' ? '🫙' :
-                 r.cuisine === 'בינלאומי' ? '🌍' : '🍽️'}
+                {CUISINE_ICONS[r.cuisine] ?? '🍽️'}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-[14px] font-extrabold text-ocean-700 leading-tight">{r.name}</div>
+                <div className="mt-0.5">
+                  <Stars rating={r.rating} />
+                </div>
                 <div className="text-[11px] text-zinc-500 mt-0.5">{r.description}</div>
                 <div className="flex items-center gap-2 mt-1.5">
                   <span className="text-[10px] font-bold bg-ocean-50 text-ocean-700 rounded-full px-2 py-0.5">{r.cuisine}</span>
@@ -105,7 +133,7 @@ export function Restaurants() {
                   <span className="text-[10px] font-bold text-emerald-600">{PRICE[r.priceLevel]}</span>
                 </div>
               </div>
-              <span className="text-ocean-400 text-[18px] flex-shrink-0">›</span>
+              <span className="text-ocean-400 text-[18px] flex-shrink-0 mt-1">›</span>
             </a>
           ))}
         </div>
