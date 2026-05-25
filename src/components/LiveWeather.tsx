@@ -29,6 +29,7 @@ export function LiveWeather() {
 
   return (
     <div className="rounded-2xl bg-gradient-to-bl from-ocean-50 to-white border border-ocean-100 px-4 py-3">
+      <div className="text-[11px] font-extrabold text-ocean-700 mb-2">מזג אוויר יומי</div>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="text-3xl leading-none">{weatherEmoji(w.code, w.rain)}</span>
