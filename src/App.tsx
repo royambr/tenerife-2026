@@ -13,6 +13,7 @@ import { useStore, useEditMode, editStore } from './store';
 import { ToastHost } from './components/ToastHost';
 import { FeedbackFab } from './components/FeedbackSheet';
 import { WelcomeScreen } from './components/WelcomeScreen';
+import { MusicPlayer } from './components/MusicPlayer';
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('today');
@@ -62,6 +63,7 @@ export default function App() {
         <BottomNav tab={tab} onChange={setTab} />
       </div>
 
+      <MusicPlayer />
       <FeedbackFab activeTab={tab} />
       <ToastHost />
     </div>

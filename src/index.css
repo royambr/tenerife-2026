@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 html, body, #root { height: 100%; }
+html { zoom: 1.12; }
 body {
   font-family: 'Heebo', system-ui, sans-serif;
   background: linear-gradient(180deg, #f6fbfd 0%, #fbf6ee 100%);
