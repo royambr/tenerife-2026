@@ -31,7 +31,7 @@ export function Today() {
   const currentId = useStore(s => s.currentParticipantId);
   const me = participants.find(p => p.id === currentId);
   const meProfile = PROFILES[currentId];
-  const [showMe, setShowMe] = useState(false);
+  const [openParticipant, setOpenParticipant] = useState<string | null>(null);
   const allIds = participants.map(p => p.id);
 
   const allDates = useMemo(() => plan.days.map(d => d.date), [plan]);
@@ -152,19 +152,34 @@ export function Today() {
       {/* One-line context sentence */}
       <div className="text-[12px] text-ocean-700/80 leading-5">{summary.sentence}</div>
 
-      {/* Participant chip */}
-      {me && meProfile && (
-        <div>
-          <button onClick={() => setShowMe(v => !v)}
-                  aria-label={`פרופיל של ${me.name}`}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-white border border-ocean-100 px-2.5 py-1 text-[12px] font-semibold text-ocean-700">
-            <span>{me.emoji}</span>{me.name}<span className="text-[10px] text-zinc-400">{showMe ? '▴' : '▾'}</span>
-          </button>
-          {showMe && (
-            <p className="mt-1.5 text-[12px] text-zinc-600 leading-5 px-1">{meProfile.blurb}</p>
-          )}
+      {/* All participants */}
+      <div>
+        <div className="flex flex-wrap gap-1.5">
+          {participants.map(p => {
+            const profile = PROFILES[p.id];
+            const isOpen = openParticipant === p.id;
+            return (
+              <button key={p.id} onClick={() => setOpenParticipant(isOpen ? null : p.id)}
+                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold transition-colors border ${
+                        p.id === currentId
+                          ? 'bg-ocean-700 text-white border-ocean-700'
+                          : 'bg-white text-ocean-700 border-ocean-100'
+                      }`}>
+                <span>{p.emoji}</span>{p.name}<span className="text-[10px] opacity-50">{isOpen ? '▴' : '▾'}</span>
+              </button>
+            );
+          })}
         </div>
-      )}
+        {openParticipant && (() => {
+          const p = participants.find(x => x.id === openParticipant);
+          const profile = PROFILES[openParticipant];
+          return p && profile ? (
+            <p className="mt-1.5 text-[12px] text-zinc-600 leading-5 px-1">
+              <span className="font-semibold text-ocean-700">{p.emoji} {p.name}:</span> {profile.blurb}
+            </p>
+          ) : null;
+        })()}
+      </div>
 
       <TripProgress dates={allDates} activeDate={activeDate} onPick={setActiveDate} />
       <ActivitySpinner activities={todays} />
