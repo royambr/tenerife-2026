@@ -12,23 +12,25 @@ export interface DayWeather {
   sunset: string;  // "21:07"
 }
 
-const CACHE_KEY = 'tnf_weather_v2';
+const CACHE_KEY_PREFIX = 'tnf_weather_v2';
 const TTL_MS = 60 * 60 * 1000; // 1h — stays fresh through the day
 
 interface Cache { fetchedAt: number; data: DayWeather[]; }
 
-function loadCache(): Cache | null {
+function cacheKey(start: string, end: string) { return `${CACHE_KEY_PREFIX}_${start}_${end}`; }
+
+function loadCache(start: string, end: string): Cache | null {
   try {
-    const raw = localStorage.getItem(CACHE_KEY);
+    const raw = localStorage.getItem(cacheKey(start, end));
     if (!raw) return null;
     const c = JSON.parse(raw) as Cache;
     if (Date.now() - c.fetchedAt > TTL_MS) return null;
     return c;
   } catch { return null; }
 }
-function saveCache(data: DayWeather[]) {
+function saveCache(start: string, end: string, data: DayWeather[]) {
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ fetchedAt: Date.now(), data }));
+    localStorage.setItem(cacheKey(start, end), JSON.stringify({ fetchedAt: Date.now(), data }));
   } catch {}
 }
 
@@ -59,13 +61,13 @@ async function fetchWeather(start: string, end: string): Promise<DayWeather[]> {
 }
 
 export function useWeather(start: string, end: string) {
-  const [data, setData] = useState<DayWeather[] | null>(() => loadCache()?.data || null);
+  const [data, setData] = useState<DayWeather[] | null>(() => loadCache(start, end)?.data || null);
   useEffect(() => {
-    const cached = loadCache();
+    const cached = loadCache(start, end);
     if (cached) { setData(cached.data); return; }
     if (!inflight) {
       inflight = fetchWeather(start, end)
-        .then(d => { saveCache(d); return d; })
+        .then(d => { saveCache(start, end, d); return d; })
         .catch(() => [] as DayWeather[])
         .finally(() => { setTimeout(() => { inflight = null; }, 0); });
     }
