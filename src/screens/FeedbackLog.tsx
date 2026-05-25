@@ -1,5 +1,6 @@
 import React from 'react';
-import { useStore, store } from '../store';
+import { useStore } from '../store';
+import { deleteFeedback, clearFeedback } from '../lib/feedbackSync';
 
 const SCREEN_LABELS: Record<string, string> = {
   general: 'כללי', today: 'היום', schedule: 'לו״ז',
@@ -52,7 +53,7 @@ export function FeedbackLog() {
                   )}
                   <span className="text-[11px] text-zinc-400">{fmt(f.ts)}</span>
                   <button
-                    onClick={() => store.deleteFeedback(f.id)}
+                    onClick={() => deleteFeedback(f.id)}
                     className="text-[11px] text-zinc-300 hover:text-red-400 transition-colors leading-none"
                     aria-label="מחק פידבק"
                   >✕</button>
@@ -67,7 +68,7 @@ export function FeedbackLog() {
 
       {feedback.length > 0 && (
         <button
-          onClick={() => { if (confirm('למחוק את כל הפידבקים?')) store.clearFeedback(); }}
+          onClick={() => { if (confirm('למחוק את כל הפידבקים?')) clearFeedback(); }}
           className="w-full rounded-2xl bg-white border border-zinc-200 text-zinc-500 py-2.5 text-[12px] font-bold"
         >
           🗑️ מחק הכל

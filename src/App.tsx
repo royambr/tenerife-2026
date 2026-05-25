@@ -15,14 +15,15 @@ import { ToastHost } from './components/ToastHost';
 import { FeedbackFab } from './components/FeedbackSheet';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { MusicProvider, MusicPlayer } from './components/MusicPlayer';
+import { useFeedbackSync } from './lib/feedbackSync';
 
-export default function App() {
+function AppInner() {
   const [tab, setTab] = useState<Tab>('today');
   const trip = useStore(s => s.trip);
   const edit = useEditMode();
+  useFeedbackSync();
 
   return (
-    <MusicProvider>
     <div dir="rtl" className={`min-h-screen text-ocean-700 ${edit ? 'pt-10' : ''}`}>
       <WelcomeScreen onEnter={() => {}} />
       {edit && (
@@ -70,6 +71,13 @@ export default function App() {
       <FeedbackFab activeTab={tab} />
       <ToastHost />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <MusicProvider>
+      <AppInner />
     </MusicProvider>
   );
 }

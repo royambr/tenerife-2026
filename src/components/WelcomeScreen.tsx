@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '../store';
+import { useMusicContext } from './MusicPlayer';
 
 const SESSION_KEY = 'tnf_welcomed';
 
@@ -10,6 +11,7 @@ interface Props {
 export function WelcomeScreen({ onEnter }: Props) {
   const trip = useStore(s => s.trip);
   const [visible, setVisible] = useState(false);
+  const { startWithSound } = useMusicContext();
 
   useEffect(() => {
     if (!sessionStorage.getItem(SESSION_KEY)) setVisible(true);
@@ -20,6 +22,7 @@ export function WelcomeScreen({ onEnter }: Props) {
   function handleEnter() {
     sessionStorage.setItem(SESSION_KEY, '1');
     setVisible(false);
+    startWithSound(); // guaranteed user-gesture context → browser allows audio
     onEnter();
   }
 

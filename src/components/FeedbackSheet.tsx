@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Sheet } from './Sheet';
-import { store, useStore } from '../store';
+import { useStore } from '../store';
+import { addFeedback as syncAddFeedback } from '../lib/feedbackSync';
 
 const SCREEN_OPTIONS: { id: string; label: string }[] = [
   { id: 'general',  label: 'כללי' },
@@ -30,7 +31,7 @@ export function FeedbackSheet({ open, onClose, defaultScreen }:{
 
   function submit() {
     if (!text.trim()) return;
-    store.addFeedback({
+    syncAddFeedback({
       text: text.trim(),
       screen,
       rating: rating > 0 ? (rating as 1|2|3|4|5) : undefined,

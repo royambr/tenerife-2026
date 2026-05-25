@@ -28,50 +28,24 @@ interface MusicCtx {
   ready: boolean;
   togglePlay(): void;
   toggleMute(): void;
+  /** Call this directly from a user-gesture handler to start with sound */
+  startWithSound(): void;
 }
 
 const MusicContext = createContext<MusicCtx>({
-  playing: false, muted: false, ready: false,
-  togglePlay: () => {}, toggleMute: () => {},
+  playing: false, muted: true, ready: false,
+  togglePlay: () => {}, toggleMute: () => {}, startWithSound: () => {},
 });
+
+export function useMusicContext() { return useContext(MusicContext); }
 
 export function MusicProvider({ children }: { children: React.ReactNode }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YTPlayer | null>(null);
-  const interactedRef = useRef(false);
   const playerReadyRef = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
   const [ready, setReady] = useState(false);
-
-  function unmuteAndPlay() {
-    if (!playerRef.current) return;
-    playerRef.current.unMute();
-    playerRef.current.setVolume(80);
-    playerRef.current.playVideo();
-    setMuted(false);
-    setPlaying(true);
-  }
-
-  // On first user gesture, unmute if player is already ready; otherwise flag for onReady
-  useEffect(() => {
-    function onFirstInteraction() {
-      if (interactedRef.current) return;
-      interactedRef.current = true;
-      if (playerReadyRef.current) unmuteAndPlay();
-      document.removeEventListener('click', onFirstInteraction);
-      document.removeEventListener('keydown', onFirstInteraction);
-      document.removeEventListener('touchstart', onFirstInteraction);
-    }
-    document.addEventListener('click', onFirstInteraction);
-    document.addEventListener('keydown', onFirstInteraction);
-    document.addEventListener('touchstart', onFirstInteraction);
-    return () => {
-      document.removeEventListener('click', onFirstInteraction);
-      document.removeEventListener('keydown', onFirstInteraction);
-      document.removeEventListener('touchstart', onFirstInteraction);
-    };
-  }, []);
 
   useEffect(() => {
     function initPlayer() {
@@ -84,13 +58,11 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
           modestbranding: 1, rel: 0, mute: 1,
         },
         events: {
-          onReady: (e: { target: YTPlayer }) => {
-            e.target.playVideo();
+          onReady: () => {
             playerReadyRef.current = true;
             setReady(true);
+            playerRef.current?.playVideo();
             setPlaying(true);
-            // User already clicked (e.g. WelcomeScreen enter button) → unmute now
-            if (interactedRef.current) unmuteAndPlay();
           },
           onStateChange: (e: { data: number }) => {
             if (e.data === 0) playerRef.current?.playVideo();
@@ -115,6 +87,16 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     return () => { playerRef.current?.destroy(); };
   }, []);
 
+  // Call this synchronously inside a user-gesture handler — guarantees browser allows audio
+  function startWithSound() {
+    if (!playerRef.current) return;
+    playerRef.current.unMute();
+    playerRef.current.setVolume(80);
+    playerRef.current.playVideo();
+    setMuted(false);
+    setPlaying(true);
+  }
+
   function toggleMute() {
     if (!playerRef.current) return;
     if (muted) { playerRef.current.unMute(); playerRef.current.setVolume(80); setMuted(false); }
@@ -127,7 +109,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <MusicContext.Provider value={{ playing, muted, ready, togglePlay, toggleMute }}>
+    <MusicContext.Provider value={{ playing, muted, ready, togglePlay, toggleMute, startWithSound }}>
       <div ref={containerRef} style={{ width: 1, height: 1, position: 'fixed', opacity: 0, pointerEvents: 'none', bottom: 0, left: 0 }} />
       {children}
     </MusicContext.Provider>

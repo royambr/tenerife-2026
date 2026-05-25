@@ -461,6 +461,10 @@ export const store = {
     emit();
   },
   // ---------- feedback ----------
+  setFeedback(entries: import('./data/types').FeedbackEntry[]) {
+    state = { ...state, feedback: entries };
+    emit();
+  },
   addFeedback(input: { text: string; screen?: string; rating?: 1|2|3|4|5 }) {
     const text = (input.text || '').trim();
     if (!text) return;
