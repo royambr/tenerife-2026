@@ -465,10 +465,10 @@ export const store = {
     state = { ...state, feedback: entries };
     emit();
   },
-  addFeedback(input: { text: string; screen?: string; rating?: 1|2|3|4|5 }) {
+  addFeedback(input: { text: string; screen?: string; rating?: 1|2|3|4|5; who?: string }) {
     const text = (input.text || '').trim();
     if (!text) return;
-    const me = state.currentParticipantId;
+    const me = input.who || state.currentParticipantId;
     const entry: FeedbackEntry = {
       id: uid('fb'),
       ts: Date.now(),

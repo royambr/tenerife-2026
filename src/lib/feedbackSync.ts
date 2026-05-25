@@ -5,7 +5,7 @@ import type { FeedbackEntry } from '../data/types';
 
 // Drop-in replacements that write to both local store and Supabase
 
-export async function addFeedback(input: { text: string; screen?: string; rating?: 1|2|3|4|5 }) {
+export async function addFeedback(input: { text: string; screen?: string; rating?: 1|2|3|4|5; who?: string }) {
   store.addFeedback(input);
   const entry = store.get().feedback[0]; // just added at index 0
   await supabase.from('feedback').insert({
