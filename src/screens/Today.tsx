@@ -363,6 +363,8 @@ export function Today() {
             <div>היום: <span className="font-extrabold">~€{dayCost}</span> לאיש</div>
             <div>לכל הטיול: <span className="font-extrabold">~€{tripCost}</span> לאיש</div>
           </div>
+
+          <RestaurantList />
         </div>
       </div>
 
@@ -370,7 +372,6 @@ export function Today() {
       <AlternativesSheet target={altFor} open={!!altFor} onClose={() => setAltFor(null)} />
       <TripJournal open={showJournal} onClose={() => setShowJournal(false)} />
       <FunFact />
-      <RestaurantList />
       <Phrasebook />
     </div>
   );
