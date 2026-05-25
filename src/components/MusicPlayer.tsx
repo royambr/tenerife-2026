@@ -38,9 +38,40 @@ const MusicContext = createContext<MusicCtx>({
 export function MusicProvider({ children }: { children: React.ReactNode }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YTPlayer | null>(null);
+  const interactedRef = useRef(false);
+  const playerReadyRef = useRef(false);
   const [playing, setPlaying] = useState(false);
-  const [muted, setMuted] = useState(false);
+  const [muted, setMuted] = useState(true);
   const [ready, setReady] = useState(false);
+
+  function unmuteAndPlay() {
+    if (!playerRef.current) return;
+    playerRef.current.unMute();
+    playerRef.current.setVolume(80);
+    playerRef.current.playVideo();
+    setMuted(false);
+    setPlaying(true);
+  }
+
+  // On first user gesture, unmute if player is already ready; otherwise flag for onReady
+  useEffect(() => {
+    function onFirstInteraction() {
+      if (interactedRef.current) return;
+      interactedRef.current = true;
+      if (playerReadyRef.current) unmuteAndPlay();
+      document.removeEventListener('click', onFirstInteraction);
+      document.removeEventListener('keydown', onFirstInteraction);
+      document.removeEventListener('touchstart', onFirstInteraction);
+    }
+    document.addEventListener('click', onFirstInteraction);
+    document.addEventListener('keydown', onFirstInteraction);
+    document.addEventListener('touchstart', onFirstInteraction);
+    return () => {
+      document.removeEventListener('click', onFirstInteraction);
+      document.removeEventListener('keydown', onFirstInteraction);
+      document.removeEventListener('touchstart', onFirstInteraction);
+    };
+  }, []);
 
   useEffect(() => {
     function initPlayer() {
@@ -54,12 +85,12 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         },
         events: {
           onReady: (e: { target: YTPlayer }) => {
-            e.target.unMute();
-            e.target.setVolume(80);
             e.target.playVideo();
+            playerReadyRef.current = true;
             setReady(true);
             setPlaying(true);
-            setMuted(false);
+            // User already clicked (e.g. WelcomeScreen enter button) → unmute now
+            if (interactedRef.current) unmuteAndPlay();
           },
           onStateChange: (e: { data: number }) => {
             if (e.data === 0) playerRef.current?.playVideo();
