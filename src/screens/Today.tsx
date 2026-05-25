@@ -364,15 +364,16 @@ export function Today() {
             <div>לכל הטיול: <span className="font-extrabold">~€{tripCost}</span> לאיש</div>
           </div>
 
-          <RestaurantList />
         </div>
       </div>
+
+      <FunFact />
+      <RestaurantList />
+      <Phrasebook />
 
       <ActivitySheet activity={sel} open={!!sel} onClose={() => setSel(null)} onReplace={(a) => { setSel(null); setAltFor(a); }} />
       <AlternativesSheet target={altFor} open={!!altFor} onClose={() => setAltFor(null)} />
       <TripJournal open={showJournal} onClose={() => setShowJournal(false)} />
-      <FunFact />
-      <Phrasebook />
     </div>
   );
 }

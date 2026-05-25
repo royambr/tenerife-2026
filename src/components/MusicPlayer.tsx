@@ -72,12 +72,6 @@ export function MusicPlayer({ playRef }: Props) {
       });
 
       widget.bind(window.SC.Widget.Events.PAUSE, () => setPlaying(false));
-
-      // When the set ends, restart from track 0 so only the Ozora set loops
-      widget.bind(window.SC.Widget.Events.FINISH, () => {
-        widget.skip(0);
-        widget.play();
-      });
     };
     tryInit();
   }
