@@ -14,7 +14,7 @@ import { useStore, useEditMode, editStore } from './store';
 import { ToastHost } from './components/ToastHost';
 import { FeedbackFab } from './components/FeedbackSheet';
 import { WelcomeScreen } from './components/WelcomeScreen';
-import { MusicProvider, MusicPlayer } from './components/MusicPlayer';
+import { MusicProvider, MusicPlayer, MusicControls } from './components/MusicPlayer';
 import { useFeedbackSync } from './lib/feedbackSync';
 
 function AppInner() {
@@ -26,6 +26,15 @@ function AppInner() {
   return (
     <div dir="rtl" className={`min-h-screen text-ocean-700 ${edit ? 'pt-10' : ''}`}>
       <WelcomeScreen onEnter={() => {}} />
+
+      {/* Mobile sticky title + music bar */}
+      <div className="lg:hidden sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-ocean-100 px-4 py-2 flex items-center justify-between">
+        <div className="text-[12px] font-extrabold text-ocean-700 leading-tight">
+          טנריף · {trip.title} · יוני 2026
+        </div>
+        <MusicControls />
+      </div>
+
       {edit && (
         <div className="fixed top-0 inset-x-0 z-[80] bg-volcano-900 text-white text-center text-[12px] font-extrabold py-2 px-3 shadow-card flex items-center justify-center gap-3">
           <span>✏️ מצב עריכה פעיל — כל פעולה נשמרת בהיסטוריה</span>
@@ -42,9 +51,10 @@ function AppInner() {
         <main className="flex-1 min-w-0">
           <header className="hidden lg:flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-2xl font-extrabold text-ocean-700">{trip.title}</h1>
-              <div className="text-sm text-zinc-500">{trip.startDate} – {trip.endDate} · {trip.travelersCount} חברים</div>
+              <h1 className="text-2xl font-extrabold text-ocean-700">טנריף · {trip.title} · יוני 2026</h1>
+              <div className="text-sm text-zinc-500">{trip.travelersCount} חברים · {trip.startDate} – {trip.endDate}</div>
             </div>
+            <MusicControls className="bg-ocean-50 rounded-2xl px-3 py-2" />
           </header>
 
           <div className="mx-auto max-w-md lg:max-w-none">
